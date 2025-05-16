@@ -11,6 +11,9 @@ import javafx.stage.Stage;
 public class AppClass extends Application {
 	
 	Logger logger;
+	public static final int minimumStageWidth = 600;
+	public static final int minimumStageHeight = 600;
+	
 
 	@Override
 	public void start(Stage primaryStage) throws Exception {
@@ -35,6 +38,9 @@ public class AppClass extends Application {
 		controller.prepareUI();
 		
 		Stage stage = new Stage();
+//		stage.setMinHeight(minimumStageHeight);
+//		stage.setMinWidth(minimumStageWidth);
+		stage.setResizable(false);
 		Scene scene = new Scene(controller.getMain());
 		stage.setScene(scene);
 		
