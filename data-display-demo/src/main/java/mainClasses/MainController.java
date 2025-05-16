@@ -34,6 +34,7 @@ import net.objecthunter.exp4j.ExpressionBuilder;
 public class MainController {
 
 	// TODO Possible next TODOs
+	// y=x^2 doesn't produce a parabola; squared negatives stay negative
 	// drawBackground() should draw a thin grid in the background, with ticks and correct scaling
 	// Why is the line dashed when there is a big gap between points?
 	// Make the TextField a typable dropdown that lets the user select previously added formulas
