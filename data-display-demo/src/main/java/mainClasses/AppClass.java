@@ -11,8 +11,8 @@ import javafx.stage.Stage;
 public class AppClass extends Application {
 	
 	Logger logger;
-	public static final int minimumStageWidth = 600;
-	public static final int minimumStageHeight = 600;
+	public static final int minimumStageWidth = 700;
+	public static final int minimumStageHeight = 700;
 	
 
 	@Override

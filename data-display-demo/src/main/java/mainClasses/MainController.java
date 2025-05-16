@@ -4,16 +4,27 @@ import java.util.ArrayList;
 
 import javax.script.ScriptException;
 
+import javafx.application.Platform;
+import javafx.event.ActionEvent;
+import javafx.event.EventHandler;
 import javafx.fxml.FXML;
 import javafx.geometry.Insets;
+import javafx.scene.Parent;
 import javafx.scene.canvas.Canvas;
 import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Alert.AlertType;
 import javafx.scene.control.Button;
 import javafx.scene.control.CheckBox;
+import javafx.scene.control.Label;
+import javafx.scene.control.ScrollPane;
 import javafx.scene.control.TextField;
+import javafx.scene.layout.Background;
+import javafx.scene.layout.BackgroundFill;
+import javafx.scene.layout.CornerRadii;
 import javafx.scene.layout.HBox;
+import javafx.scene.layout.Pane;
+import javafx.scene.layout.Priority;
 import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
@@ -22,28 +33,55 @@ import net.objecthunter.exp4j.ExpressionBuilder;
 
 public class MainController {
 
+	// TODO Possible next TODOs
+	// drawBackground() should draw a thin grid in the background, with ticks and correct scaling
+	// Why is the line dashed when there is a big gap between points?
+	// Give user checkbox to de/select from list. Only display selected
+	// Allow user to import/export data
+	// Unit tests
+
+	ArrayList<GraphData> graphDataPoints = new ArrayList<>();
+
 	Canvas canvas;
 	GraphicsContext gc;
 
-	@FXML HBox main;
-	@FXML VBox canvasBox;
-	@FXML TextField formulaEntryTF;
-	@FXML VBox topButtonsRow;
-	@FXML CheckBox overlayMultipleCheckBox;
-	@FXML CheckBox drawAxesCheckBox;
-	@FXML VBox leftPanelVBox;
-	@FXML CheckBox scaleCurvesCheckBox;
+	@FXML
+	HBox main;
+	@FXML
+	VBox canvasBox;
+	@FXML
+	TextField formulaEntryTF;
+	@FXML
+	VBox topButtonsRow;
+	@FXML
+	CheckBox overlayMultipleCheckBox;
+	@FXML
+	CheckBox drawAxesCheckBox;
+	@FXML
+	CheckBox drawBackgroundCheckBox;
+	@FXML
+	VBox leftPanelVBox;
+	@FXML
+	VBox listOfLinesVBox;
+	@FXML
+	ScrollPane listOfLineScrollPane;
+	@FXML
+	CheckBox scaleCurvesCheckBox;
+	@FXML
+	Button confirmButton;
 
-	// TODO Make it dynamically fill Stage
-//	double canvasWidth = 500;
-//	double canvasHeight = 400;
 	Color canvasBackGroundColour = Color.LIGHTBLUE;
-	Color canvasStrokeColour = Color.GREEN;
 	Color canvasAxisColour = Color.BLACK;
+	Color[] lineColours = { Color.LIGHTGREEN, Color.ORANGE, Color.BLUEVIOLET, Color.CHARTREUSE,//
+			Color.PINK, Color.SANDYBROWN, Color.RED, Color.AQUA };
+
 	int canvasLineWidth = 2;
 	double topBarOpacity = 0.4;
-	
-	static String fxmlFileName = "/mainFXML.fxml";
+
+	final static String fxmlFileName = "/mainFXML.fxml";
+
+	final String removeRowString = "x";
+	final String formulaBoxStartingText = "y=";
 
 	public HBox getMain() {
 		return main;
@@ -56,79 +94,238 @@ public class MainController {
 	public void prepareUI() {
 		createDefaultCanvas();
 		getCanvasBox().getChildren().add(canvas);
-		
+		overlayMultipleCheckBox.setSelected(true);
 		drawAxes(1);
+		drawBackground(1);
 		
-		int margin = 10;
-		leftPanelVBox.getChildren().forEach(x -> VBox.setMargin(x, new Insets(margin, margin, margin, margin)));
+		VBox.setVgrow(listOfLineScrollPane, Priority.ALWAYS);
 		
-		formulaEntryTF.setOnAction(event -> {
-		    setCurveToCanvas();
+		formulaEntryTF.setText(formulaBoxStartingText);
+		Platform.runLater(() -> {
+			moveCaretToEndOfFormulaBox();
 		});
 
+		HBox.setHgrow(confirmButton, Priority.ALWAYS);
+		confirmButton.setMaxWidth(Double.MAX_VALUE); // Ensures full width
+
+		int margin = 10;
+		leftPanelVBox.getChildren().forEach(x -> VBox.setMargin(x, new Insets(margin, margin, margin, margin)));
+
+		formulaEntryTF.setOnAction(event -> {
+			setCurveToCanvas();
+		});
+
+		drawBackgroundCheckBox.setSelected(true);
 		drawAxesCheckBox.setSelected(true);
-		
+
+		drawBackgroundCheckBox.setOnAction(new EventHandler<ActionEvent>() {
+			@Override
+			public void handle(ActionEvent event) {
+				redrawLinesOnGraphFromCache();
+			}
+		});
+		drawAxesCheckBox.setOnAction(new EventHandler<ActionEvent>() {
+			@Override
+			public void handle(ActionEvent event) {
+				redrawLinesOnGraphFromCache();
+			}
+		});
+		overlayMultipleCheckBox.setOnAction(new EventHandler<ActionEvent>() {
+			@Override
+			public void handle(ActionEvent event) {
+				redrawLinesOnGraphFromCache();
+			}
+		});
+		scaleCurvesCheckBox.setOnAction(new EventHandler<ActionEvent>() {
+			@Override
+			public void handle(ActionEvent event) {
+				redrawLinesOnGraphFromCache();
+			}
+		});
+//		overlayMultipleCheckBox
+//		scaleCurvesCheckBox
+
+	}
+
+	private void moveCaretToEndOfFormulaBox() {
+		formulaEntryTF.requestFocus();
+		formulaEntryTF.positionCaret(formulaEntryTF.getLength());
+		formulaEntryTF.deselect();
 	}
 
 	private void createDefaultCanvas() {
 		canvas = new Canvas();
 		canvas.setHeight(AppClass.minimumStageHeight);
 		canvas.setWidth(AppClass.minimumStageWidth);
-		
+
 		int canvasMargin = 5;
 		HBox.setMargin(canvasBox, new Insets(canvasMargin, canvasMargin, canvasMargin, canvasMargin));
 		canvasBox.setPrefWidth(Region.USE_COMPUTED_SIZE);
 		canvasBox.setPrefHeight(Region.USE_COMPUTED_SIZE);
 		canvasBox.setStyle("-fx-border-color: black; -fx-border-width: 3px;");
-		
+
 		gc = canvas.getGraphicsContext2D();
 		gc.setFill(canvasBackGroundColour);
-		gc.setStroke(canvasStrokeColour);
 		gc.setLineWidth(canvasLineWidth);
 	}
 
 	private void createLine(String formula) throws ScriptException {
-		
+
 		formula = tidyAndCorrectFormula(formula);
-		if(formula == null) {
-			System.out.println("Something wrong with the formula. Not drawing: " + formula);
+		if (formula == null) {
+//			System.out.println("Something wrong with the formula. Not drawing: " + formula);
 			return;
 		}
+		formulaEntryTF.setText(formulaBoxStartingText);
+		moveCaretToEndOfFormulaBox();
 
-		// Get raw values, i.e values before scaling/translation etc
 		ArrayList<Double> rawYValues = new ArrayList<Double>();
 		getRawValues(formula, rawYValues);
 
-		
-		double lowest = getLowestValue(rawYValues);
-		ArrayList<Double> yValues = new ArrayList<Double>();
-		for (int counter = 0; counter < rawYValues.size(); counter++) {
-//			yValues.add(rawYValues.get(counter) - lowest);
-			yValues.add(rawYValues.get(counter) - 0);
+		GraphData data = new GraphData("Y" + formula.toUpperCase().replace("*X", "X"), "Y" + formula.toUpperCase().replace("*X", "X"), rawYValues);
+
+		// TODO This is flimsy ATM
+		// Avoiding duplicates as a temporary solution to make sure the UI list
+		// deletes the right one
+		boolean add = true;
+		for (GraphData existing : graphDataPoints) {
+			if (existing.getFormula().equals(data.getFormula())) {
+				add = false;
+				break;
+			}
 		}
 
+		if (add) {
+			graphDataPoints.add(data);
+			redrawLinesOnGraphFromCache();
+		} else {
+			displayPopup("Formula already exists: Y" + formula.toUpperCase());
+		}
+
+	}
+
+	private void redrawLinesOnGraphFromCache() {
+		gc.clearRect(0, 0, canvas.getWidth(), canvas.getHeight());
+		listOfLinesVBox.getChildren().clear();
+
+		if (getOverlayMultiple()) {
+			for (GraphData data : graphDataPoints) {
+				addLineToUiList(data);
+				drawLineImpl(data.yValues);
+			}
+		} else {
+			boolean drawn = false;
+			for (GraphData data : graphDataPoints) {
+				addLineToUiList(data);
+				if (!drawn) {
+					drawLineImpl(data.yValues);
+					drawn = true;
+				}
+			}
+		}
+
+		if (graphDataPoints.size() == 0 && getDrawAxes()) {
+			drawAxes(1);
+		}
+
+		moveCaretToEndOfFormulaBox();
+		
+	}
+
+	private void addLineToUiList(GraphData data) {
+
+		// TODO This would be better as its own FXML file
+		// So it's less fiddly/clunky
+
+		HBox outerHBox = new HBox();
+		VBox.setMargin(outerHBox, new Insets(1, 1, 1, 1));
+		listOfLinesVBox.getChildren().add(outerHBox);
+
+		// TODO Make this let the user de/select lines to show
+//		CheckBox checkBox = new CheckBox();
+//		outerHBox.getChildren().add(checkBox);
+
+		Button deleteButton = new Button(removeRowString);
+		BackgroundFill backgroundFill = new BackgroundFill(getNextColour(), new CornerRadii(3), Insets.EMPTY);
+		deleteButton.setBackground(new Background(backgroundFill));
+		deleteButton.setStyle("-fx-border-color: black; -fx-border-width: 2px; -fx-border-radius: 3px;");
+		outerHBox.getChildren().add(deleteButton);
+
+		Label label = new Label(" " + data.getFormula());
+		label.setMaxWidth(Double.MAX_VALUE);
+		HBox.setHgrow(label, Priority.ALWAYS);
+		outerHBox.getChildren().add(label);
+
+		deleteButton.setOnAction(event -> {
+
+			boolean identified = false;
+			for (int counter = 0; counter < graphDataPoints.size(); counter++) {
+				if (graphDataPoints.get(counter).getFormula().trim().equalsIgnoreCase(label.getText().trim())) {
+					graphDataPoints.remove(counter);
+					identified = true;
+					break;
+				}
+			}
+
+			if (identified) {
+
+				Parent parent = deleteButton.getParent();
+				if (parent instanceof Pane) {
+					((Pane) parent).getChildren().clear();
+					Parent grandParent = parent.getParent();
+					if (grandParent instanceof Pane) {
+						((Pane) grandParent).getChildren().remove(parent);
+					}
+				}
+			redrawLinesOnGraphFromCache();
+			moveCaretToEndOfFormulaBox();
+			}
+		});
+
+	}
+
+	private void drawLineImpl(ArrayList<Double> rawYValues) {
+
 		// Optionally: Clear the canvas if only one is to be drawn
-		if(!getOverlayMultiple()) {
+		if (!getOverlayMultiple()) {
 			gc.clearRect(0, 0, canvas.getWidth(), canvas.getHeight());
 		}
-		
+
 		// Optionally: scale the y values to fit canvas
-		double scale = 1;
-		if(getScaleCurves()) {
-			double largest = findLargest(yValues);
-			scale = canvas.getHeight() / largest;
+		double scale = getScalingFactor(rawYValues);
+
+		// Optionally: Draw background
+		if(getDrawBackground()) {
+			drawBackground(scale);
 		}
 		
 		// Optionally: Draw axes
-		if(getDrawAxes()) {
+		if (getDrawAxes()) {
 			drawAxes(scale);
 		}
 
 		// Draw the line
-		drawYValues(yValues, scale);
+		drawYValues(rawYValues, scale);
 
 	}
-	
+
+	private void drawBackground(double scale) {
+		// TODO Auto-generated method stub
+		// TODO vvv
+			// TODO Also: add tickmarks and numbers
+		System.out.println("TODO: Draw a thin grid in the background that scales with the scale");
+	}
+
+	private double getScalingFactor(ArrayList<Double> rawYValues) {
+		// TODO Consider; this squashes each line individually
+			// Would it be preferable to return a scaling factor for ALL lines/data points?
+		if (getScaleCurves()) {
+			double largest = findLargest(rawYValues);
+			return canvas.getHeight() / largest;
+		}
+		return 1;
+	}
+
 	private String tidyAndCorrectFormula(String formula) {
 		formula = tidyFormulaString(formula);
 		boolean correctFormula = checkFormulaIsCorrect(formula);
@@ -143,27 +340,29 @@ public class MainController {
 	}
 
 	private void drawAxes(double scale) {
-		
+
 		gc.setStroke(canvasAxisColour);
 		double lineThickness = 2;
 
-		
 		// Draw vertical line
-		gc.strokeLine(canvas.getWidth()/2 - lineThickness/2, 0, canvas.getWidth()/2 + lineThickness/2, canvas.getHeight());
-		
-		
+		gc.strokeLine(canvas.getWidth() / 2 - lineThickness / 2, 0, canvas.getWidth() / 2 + lineThickness / 2,
+				canvas.getHeight());
+
 		// Draw horizontal line
 		// TODO This isn't right; needs to take scale into account
 		double yValue = canvas.getHeight() / 2;
 		gc.strokeLine(0, yValue, canvas.getWidth(), yValue + lineThickness);
-		
+
 		// TODO draw little tick lines and numbers across the axes
-		// TODO Stop scaling? i.e so things can actually be placed relative to axes
-		// TODO Make the scaling OPTIONAL. i.e so the user can just see the 
+		// TODO Make the scaling OPTIONAL. i.e so the user can just see the
 	}
 
 	private boolean getDrawAxes() {
 		return drawAxesCheckBox.isSelected();
+	}
+	
+	private boolean getDrawBackground() {
+		return drawBackgroundCheckBox.isSelected();
 	}
 
 	private boolean getOverlayMultiple() {
@@ -178,19 +377,29 @@ public class MainController {
 	}
 
 	private void drawYValues(ArrayList<Double> yValues, double scale) {
-		
-		gc.setStroke(canvasStrokeColour);
-		
+
+		Color colour = getNextColour();
+		gc.setStroke(colour);
+
 		// TODO Why does y=x^2 etc give a series of dotted lines?
 		// Due to difference between values?
 		// Draw the line segments with smaller steps?
-		
+
 		for (int counter = 0; counter < yValues.size(); counter++) {
 			double xValue = counter;
-			double yValue = Math.round(canvas.getHeight()/2 - (yValues.get(counter) * scale));
+
+			if(Double.isNaN(yValues.get(counter))) {
+				continue;
+			}
+			
+			double yValue = Math.round(canvas.getHeight() / 2 - (yValues.get(counter) * scale));
 			gc.strokeLine(xValue, yValue, xValue + 1, yValue + 1);
-			System.out.println("DRAWN: " + xValue + " " + yValue);
+//			System.out.println("DRAWN: " + xValue + " " + yValue);
 		}
+	}
+
+	private Color getNextColour() {
+		return lineColours[listOfLinesVBox.getChildren().size() % lineColours.length];
 	}
 
 	private double findLargest(ArrayList<Double> yValues) {
@@ -204,7 +413,7 @@ public class MainController {
 	}
 
 	private double getLowestValue(ArrayList<Double> rawYValues) {
-		double lowest =  Double.MAX_VALUE;
+		double lowest = Double.MAX_VALUE;
 		for (double value : rawYValues) {
 			if (value < lowest) {
 				lowest = value;
@@ -218,13 +427,13 @@ public class MainController {
 			String formulaImpl = formula.replace("x", "" + (int) xValue);
 			Expression expression = new ExpressionBuilder(formulaImpl.split("=")[1]).build();
 
-			System.out.println("FORMULA: " + formula + " || " + formulaImpl);
-			if(formulaImpl.contains("/0")) {
+//			System.out.println("FORMULA: " + formula + " || " + formulaImpl);
+			if (formulaImpl.contains("/0")) { // Could this instead just return the highest possible value?
 				continue;
 			}
 			double result = expression.evaluate();
 			rawYValues.add(result);
-			System.out.println("(" + xValue + ", " + result + ")");
+//			System.out.println("(" + xValue + ", " + result + ")");
 		}
 	}
 
@@ -247,23 +456,46 @@ public class MainController {
 	// Unit test this
 	private boolean checkFormulaIsCorrect(String formula) {
 
-		if (!formula.contains("x") || !formula.contains("y")) {
-			displayPopup("The formula must contain an X and Y value");
+		formula = formula.toLowerCase();
+		
+		if(formula.equals(formulaBoxStartingText)) {
 			return false;
 		}
+		
+		String[] formulaSplit = formula.split("=");
+
+//		if (!formula.contains("x") || !formula.contains("y")) {
+//			displayPopup("The formula must contain an X and Y value");
+//			return false;
+//		}
 
 		if (!formula.contains("=")) {
 			displayPopup("The formula must contain an equals sign");
+			return false;
 		}
 
-		String[] formulaSplit = formula.split("=");
+		if (formulaSplit[0].contains("x")) {
+			displayPopup("The lefthand side should not contain X");
+			return false;
+		}
+
+		if (formulaSplit[1].contains("y")) {
+			displayPopup("The righthand side should not contain Y");
+			return false;
+		}
+
 		if (formulaSplit.length != 2) {
 			displayPopup("The formula must contain exactly one equals sign");
 			return false;
 		}
 
-		if (!formulaSplit[0].contains("y") || !formulaSplit[1].contains("x")) {
-			displayPopup("The formula must have Y on the left and X on the right");
+//		if (!formulaSplit[0].contains("y") || !formulaSplit[1].contains("x")) {
+//			displayPopup("The formula must have Y on the left and X on the right");
+//			return false;
+//		}
+
+		if (!formulaSplit[0].contains("y")) {
+			displayPopup("The formula must have Y on the left");
 			return false;
 		}
 
@@ -289,5 +521,21 @@ public class MainController {
 	public boolean getScaleCurves() {
 		return scaleCurvesCheckBox.isSelected();
 	}
-	
+
+	public void addSqrtToTextField() {
+		addSymbolToTfAndRefocus("sqrt()", -1);
+	}
+
+	public void addSquareToTextField() {
+		addSymbolToTfAndRefocus("^", 0);
+	}
+
+	public void addSymbolToTfAndRefocus(String input, int endOffset) {
+		String output = formulaEntryTF.getText();
+		output += input;
+		formulaEntryTF.setText(output);
+		formulaEntryTF.requestFocus();
+		formulaEntryTF.positionCaret(output.length() + endOffset);
+	}
+
 }
