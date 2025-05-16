@@ -14,8 +14,8 @@ public class AppClass extends Application {
 	private final static String appIconFileName = "linechart.png";
 	
 	Logger logger;
-	public static final int minimumStageWidth = 700;
-	public static final int minimumStageHeight = 700;
+	public static final int minimumStageWidth = 600;
+	public static final int minimumStageHeight = 600;
 	
 
 	@Override

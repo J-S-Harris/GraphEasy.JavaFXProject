@@ -35,14 +35,22 @@ public class MainController {
 
 	// TODO Possible next TODOs
 	// y=x^2 doesn't produce a parabola; squared negatives stay negative
-		// y=(x)^2 DOES display as expected, but not y=x^2? Why?
-			// Possible solution: When assessing formula, consider replacing "X" with "(X)"
-			// Then undoing it when the GraphData is created?
-	// drawBackground() should draw a thin grid in the background, with ticks and correct scaling
+	// y=(x)^2 DOES display as expected, but not y=x^2? Why?
+	// Possible solution: When assessing formula, consider replacing "X" with "(X)"
+	// Then undoing it when the GraphData is created?
+	// TODO I have done this ^^^ - check it works as it should
+	// drawBackground() should draw a thin grid in the background, with ticks and
+	// correct scaling
+	// Then make sure it's displaying as it should, with the right coordinates, etc
 	// Why is the line dashed when there is a big gap between points?
-	// Make the TextField a typable dropdown that lets the user select previously added formulas
+	// Make the GraphData remember its colour, so that deleting earlier lines
+	// doesn't change the colour
+	// Make the TextField a typable dropdown that lets the user select previously
+	// added formulas
 	// Give user checkbox to de/select from list. Only display selected
 	// Allow user to import/export data
+	// Update the github image with an extra line such as "y=(x/20)^2" to show that
+	// it does expos.
 	// Unit tests
 
 	ArrayList<GraphData> graphDataPoints = new ArrayList<>();
@@ -77,11 +85,14 @@ public class MainController {
 
 	Color canvasBackGroundColour = Color.BEIGE;
 	Color canvasAxisColour = Color.BLACK;
-	Color[] lineColours = { Color.LIGHTGREEN, Color.ORANGE, Color.BLUEVIOLET, Color.CHARTREUSE,//
-			Color.PINK, Color.SANDYBROWN, Color.RED, Color.AQUA };
+	Color canvasBackgroundColour = new Color(0.5, 0.5, 0.5, 0.5); // Grey
+	Color[] lineColours = { Color.LIGHTGREEN, Color.ORANGE, Color.BLUEVIOLET, Color.CHARTREUSE, //
+			Color.SALMON, Color.SANDYBROWN, Color.RED, Color.AQUA };
 
 	int canvasLineWidth = 2;
-	double topBarOpacity = 0.4;
+	double backgroundLineWidth = 0.5;
+
+	int gridInterval = 100;
 
 	final static String fxmlFileName = "/mainFXML.fxml";
 
@@ -102,9 +113,9 @@ public class MainController {
 		overlayMultipleCheckBox.setSelected(true);
 		drawAxes(1);
 		drawBackgroundGrid(1);
-		
+
 		VBox.setVgrow(listOfLineScrollPane, Priority.ALWAYS);
-		
+
 		formulaEntryTF.setText(formulaBoxStartingText);
 		Platform.runLater(() -> {
 			moveCaretToEndOfFormulaBox();
@@ -176,7 +187,7 @@ public class MainController {
 
 	private void paintBackground() {
 		gc.setFill(canvasBackGroundColour);
-		gc.fillRect(0, 0, canvas.getWidth(), canvas.getHeight()); // Covers the whole area
+		gc.fillRect(0, 0, canvas.getWidth(), canvas.getHeight());
 	}
 
 	private void createLine(String formula) throws ScriptException {
@@ -192,7 +203,8 @@ public class MainController {
 		ArrayList<Double> rawYValues = new ArrayList<Double>();
 		getRawValues(formula, rawYValues);
 
-		GraphData data = new GraphData("Y" + formula.toUpperCase().replace("*X", "X"), "Y" + formula.toUpperCase().replace("*X", "X"), rawYValues);
+		GraphData data = new GraphData("Y" + formula.toUpperCase().replace("*X", "X"),
+				"Y" + formula.toUpperCase().replace("*X", "X"), rawYValues);
 
 		// TODO This is flimsy ATM
 		// Avoiding duplicates as a temporary solution to make sure the UI list
@@ -239,8 +251,12 @@ public class MainController {
 			drawAxes(1);
 		}
 
+		if (graphDataPoints.size() == 0 && getDrawBackground()) {
+			drawBackgroundGrid(1);
+		}
+
 		moveCaretToEndOfFormulaBox();
-		
+
 	}
 
 	private void addLineToUiList(GraphData data) {
@@ -288,8 +304,8 @@ public class MainController {
 						((Pane) grandParent).getChildren().remove(parent);
 					}
 				}
-			redrawLinesOnGraphFromCache();
-			moveCaretToEndOfFormulaBox();
+				redrawLinesOnGraphFromCache();
+				moveCaretToEndOfFormulaBox();
 			}
 		});
 
@@ -306,10 +322,10 @@ public class MainController {
 		double scale = getScalingFactor(rawYValues);
 
 		// Optionally: Draw background
-		if(getDrawBackground()) {
+		if (getDrawBackground()) {
 			drawBackgroundGrid(scale);
 		}
-		
+
 		// Optionally: Draw axes
 		if (getDrawAxes()) {
 			drawAxes(scale);
@@ -321,15 +337,24 @@ public class MainController {
 	}
 
 	private void drawBackgroundGrid(double scale) {
-		// TODO Auto-generated method stub
-		// TODO vvv
-			// TODO Also: add tickmarks and numbers
-		System.out.println("TODO: Draw a thin grid in the background that scales with the scale");
+		gc.setStroke(canvasBackgroundColour);
+
+		int yValue = gridInterval;
+		while (yValue <= canvas.getHeight()) {
+			gc.strokeLine(0, yValue, canvas.getWidth(), yValue);
+			yValue += gridInterval;
+		}
+
+		int xValue = gridInterval;
+		while (xValue <= canvas.getWidth()) {
+			gc.strokeLine(xValue, 0, xValue, canvas.getHeight());
+			xValue += gridInterval;
+		}
 	}
 
 	private double getScalingFactor(ArrayList<Double> rawYValues) {
 		// TODO Consider; this squashes each line individually
-			// Would it be preferable to return a scaling factor for ALL lines/data points?
+		// Would it be preferable to return a scaling factor for ALL lines/data points?
 		if (getScaleCurves()) {
 			double largest = findLargest(rawYValues);
 			return canvas.getHeight() / largest;
@@ -371,7 +396,7 @@ public class MainController {
 	private boolean getDrawAxes() {
 		return drawAxesCheckBox.isSelected();
 	}
-	
+
 	private boolean getDrawBackground() {
 		return drawBackgroundCheckBox.isSelected();
 	}
@@ -399,13 +424,19 @@ public class MainController {
 		for (int counter = 0; counter < yValues.size(); counter++) {
 			double xValue = counter;
 
-			if(Double.isNaN(yValues.get(counter))) {
+			if (Double.isNaN(yValues.get(counter))) {
 				continue;
 			}
-			
-			double yValue = Math.round(canvas.getHeight() / 2 - (yValues.get(counter) * scale));
-			gc.strokeLine(xValue, yValue, xValue + 1, yValue + 1);
+
+			 // try-catch is here as the last point will fail
+			double yStartValue = Math.round(canvas.getHeight() / 2 - (yValues.get(counter) * scale));
+			try {
+				double yEndValue = Math.round(canvas.getHeight() / 2 - (yValues.get(counter + 1) * scale));
+				gc.strokeLine(xValue, yStartValue, xValue + 1, yEndValue);
 //			System.out.println("DRAWN: " + xValue + " " + yValue);
+			} catch (Exception e) {
+				gc.strokeLine(xValue, yStartValue, xValue + 1, yStartValue+1);
+			}
 		}
 	}
 
@@ -435,7 +466,7 @@ public class MainController {
 
 	private void getRawValues(String formula, ArrayList<Double> rawYValues) {
 		for (double xValue = (0 - (canvas.getWidth() / 2)); xValue <= canvas.getWidth() / 2; xValue += 1) {
-			String formulaImpl = formula.replace("x", "" + (int) xValue);
+			String formulaImpl = formula.replace("x", "(" + (int) xValue + ")");
 			Expression expression = new ExpressionBuilder(formulaImpl.split("=")[1]).build();
 
 //			System.out.println("FORMULA: " + formula + " || " + formulaImpl);
@@ -468,11 +499,11 @@ public class MainController {
 	private boolean checkFormulaIsCorrect(String formula) {
 
 		formula = formula.toLowerCase();
-		
-		if(formula.equals(formulaBoxStartingText)) {
+
+		if (formula.equals(formulaBoxStartingText)) {
 			return false;
 		}
-		
+
 		String[] formulaSplit = formula.split("=");
 
 //		if (!formula.contains("x") || !formula.contains("y")) {
