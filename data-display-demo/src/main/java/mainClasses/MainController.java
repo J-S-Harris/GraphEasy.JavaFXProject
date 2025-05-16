@@ -35,6 +35,9 @@ public class MainController {
 
 	// TODO Possible next TODOs
 	// y=x^2 doesn't produce a parabola; squared negatives stay negative
+		// y=(x)^2 DOES display as expected, but not y=x^2? Why?
+			// Possible solution: When assessing formula, consider replacing "X" with "(X)"
+			// Then undoing it when the GraphData is created?
 	// drawBackground() should draw a thin grid in the background, with ticks and correct scaling
 	// Why is the line dashed when there is a big gap between points?
 	// Make the TextField a typable dropdown that lets the user select previously added formulas
