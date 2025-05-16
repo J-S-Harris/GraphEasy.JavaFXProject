@@ -5,10 +5,13 @@ import java.util.logging.Logger;
 import javafx.application.Application;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Scene;
-import javafx.scene.canvas.Canvas;
+import javafx.scene.image.Image;
 import javafx.stage.Stage;
 
 public class AppClass extends Application {
+	
+	private final static String appTitle = "GraphEasy";
+	private final static String appIconFileName = "linechart.png";
 	
 	Logger logger;
 	public static final int minimumStageWidth = 700;
@@ -30,16 +33,15 @@ public class AppClass extends Application {
 
 	
 	private void displayMainWindow() throws Exception {
-		
-		
 		FXMLLoader loader = new FXMLLoader(getClass().getResource(MainController.fxmlFileName));
 		loader.load();
 		MainController controller = loader.getController();
 		controller.prepareUI();
 		
 		Stage stage = new Stage();
-//		stage.setMinHeight(minimumStageHeight);
-//		stage.setMinWidth(minimumStageWidth);
+		stage.setTitle(appTitle);
+		Image icon = new Image(getClass().getResourceAsStream("/" + appIconFileName)); // Adjust path if needed
+		stage.getIcons().add(icon);
 		stage.setResizable(false);
 		Scene scene = new Scene(controller.getMain());
 		stage.setScene(scene);

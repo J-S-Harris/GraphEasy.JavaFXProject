@@ -36,6 +36,7 @@ public class MainController {
 	// TODO Possible next TODOs
 	// drawBackground() should draw a thin grid in the background, with ticks and correct scaling
 	// Why is the line dashed when there is a big gap between points?
+	// Make the TextField a typable dropdown that lets the user select previously added formulas
 	// Give user checkbox to de/select from list. Only display selected
 	// Allow user to import/export data
 	// Unit tests
@@ -70,7 +71,7 @@ public class MainController {
 	@FXML
 	Button confirmButton;
 
-	Color canvasBackGroundColour = Color.LIGHTBLUE;
+	Color canvasBackGroundColour = Color.BEIGE;
 	Color canvasAxisColour = Color.BLACK;
 	Color[] lineColours = { Color.LIGHTGREEN, Color.ORANGE, Color.BLUEVIOLET, Color.CHARTREUSE,//
 			Color.PINK, Color.SANDYBROWN, Color.RED, Color.AQUA };
@@ -96,7 +97,7 @@ public class MainController {
 		getCanvasBox().getChildren().add(canvas);
 		overlayMultipleCheckBox.setSelected(true);
 		drawAxes(1);
-		drawBackground(1);
+		drawBackgroundGrid(1);
 		
 		VBox.setVgrow(listOfLineScrollPane, Priority.ALWAYS);
 		
@@ -165,8 +166,13 @@ public class MainController {
 		canvasBox.setStyle("-fx-border-color: black; -fx-border-width: 3px;");
 
 		gc = canvas.getGraphicsContext2D();
-		gc.setFill(canvasBackGroundColour);
 		gc.setLineWidth(canvasLineWidth);
+		paintBackground();
+	}
+
+	private void paintBackground() {
+		gc.setFill(canvasBackGroundColour);
+		gc.fillRect(0, 0, canvas.getWidth(), canvas.getHeight()); // Covers the whole area
 	}
 
 	private void createLine(String formula) throws ScriptException {
@@ -207,6 +213,7 @@ public class MainController {
 	private void redrawLinesOnGraphFromCache() {
 		gc.clearRect(0, 0, canvas.getWidth(), canvas.getHeight());
 		listOfLinesVBox.getChildren().clear();
+		paintBackground();
 
 		if (getOverlayMultiple()) {
 			for (GraphData data : graphDataPoints) {
@@ -296,7 +303,7 @@ public class MainController {
 
 		// Optionally: Draw background
 		if(getDrawBackground()) {
-			drawBackground(scale);
+			drawBackgroundGrid(scale);
 		}
 		
 		// Optionally: Draw axes
@@ -309,7 +316,7 @@ public class MainController {
 
 	}
 
-	private void drawBackground(double scale) {
+	private void drawBackgroundGrid(double scale) {
 		// TODO Auto-generated method stub
 		// TODO vvv
 			// TODO Also: add tickmarks and numbers
