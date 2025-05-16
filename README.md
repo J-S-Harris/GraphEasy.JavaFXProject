@@ -1,7 +1,7 @@
 # GraphEasy - JavaFX App
 GraphEasy is a simple tool to display curves defined by the general formula "y=x".
 
-It is written entirely using Java and JavaFX.
+It is written entirely using Java and JavaFX, and currently unfinished.
 
 ![My Image](https://github.com/J-S-Harris/GraphEasy.JavaFXProject/blob/020c29373aca70b247253dd9a02ae800a478cefe/data-display-demo/src/main/resources/gitHubImage.png)
 
