@@ -8,67 +8,98 @@
 <?import javafx.scene.control.Separator?>
 <?import javafx.scene.control.ScrollPane?>
 
-<HBox fx:id="main" xmlns="http://javafx.com/javafx/17"
-	xmlns:fx="http://javafx.com/fxml/1"
-	fx:controller="mainClasses.MainController">
+<HBox fx:id="main" xmlns="http://javafx.com/javafx/17" xmlns:fx="http://javafx.com/fxml/1" fx:controller="mainClasses.MainController">
+
+	<ScrollPane fx:id="leftPanelScrollPane" >
 
 	<VBox fx:id="leftPanelVBox">
-	
+
 		<VBox fx:id="topButtonsRow">
 			<children>
 				<Label text="Enter a formula" />
 				<TextField fx:id="formulaEntryTF" />
-				<Button fx:id="confirmButton" text="Go!" onAction="#setCurveToCanvas" />
+				<Button fx:id="confirmButton" text="Go!"
+					onAction="#setCurveToCanvas" />
 			</children>
 		</VBox>
-		
-		<Separator maxHeight="1"/>
-		
+
+		<Separator maxHeight="1" />
+
 		<VBox fx:id="specialCharacterInputRow">
 			<Label fx:id="specialCharsLabel" text="Special Characters" />
 			<HBox spacing="10"> <!-- Adjust spacing value as needed -->
-			    <Button fx:id="squareButton" text="X^y" onAction="#addSquareToTextField"/>
-			    <Button fx:id="sqrtButton" text="√" onAction="#addSqrtToTextField"/>
+				<Button fx:id="squareButton" text="X^y"
+					onAction="#addSquareToTextField" />
+				<Button fx:id="sqrtButton" text="√"
+					onAction="#addSqrtToTextField" />
 			</HBox>
 		</VBox>
+
+		<Separator maxHeight="1" />
+
+		<VBox fx:id="intervalSizeAdjustmentRow">
+			<children>
+				<Label fx:id="intervalSizeLabel" text="Grid Size" />
+				<HBox>
+				<Button fx:id="decreaseIntervalButton" text="-"
+					onAction="#decreaseBackgroundGridInterval" />
+				<Button fx:id="increaseIntervalButton" text="+"
+					onAction="#increaseBackgroundGridInterval" />
+				</HBox>
+			</children>
+		</VBox>
+
+		<VBox fx:id="canvasSizeAdjustmentRow">
+			<children>
+				<Label fx:id="canvasSizeLabel" text="Canvas Size" />
+				<HBox>
+				<Button fx:id="decreasecanvasSizeButton" text="-"
+					onAction="#decreaseCanvasSize" />
+				<Button fx:id="increasecanvasSizeButton" text="+"
+					onAction="#increaseCanvasSize" />
+				</HBox>
+			</children>
+		</VBox>
 		
-		<Separator maxHeight="1"/>
+		<Separator maxHeight="1" />
 
 		<HBox fx:id="drawBackgroundRow">
 			<children>
 				<CheckBox fx:id="drawBackgroundCheckBox" />
-				<Label fx:id="drawBackgroundLabel" text=" Draw Background"/>
+				<Label fx:id="drawBackgroundLabel" text=" Draw Grid" />
 			</children>
 		</HBox>
 
 		<HBox fx:id="drawAxesRow">
 			<children>
 				<CheckBox fx:id="drawAxesCheckBox" />
-				<Label fx:id="drawAxesLabel" text=" Draw Axes"/>
+				<Label fx:id="drawAxesLabel" text=" Draw Axes" />
 			</children>
 		</HBox>
-		
+
 		<HBox fx:id="overlayMultipleRow">
 			<children>
 				<CheckBox fx:id="overlayMultipleCheckBox" />
-				<Label fx:id="overlayMultipleLabel" text=" Overlay Multiple"/>
+				<Label fx:id="overlayMultipleLabel" text=" Overlay Multiple" />
 			</children>
 		</HBox>
 
 		<HBox fx:id="scaleCurvesRow">
 			<children>
 				<CheckBox fx:id="scaleCurvesCheckBox" />
-				<Label fx:id="scaleCurvesLabel" text=" Scale Curves to Fit"/>
+				<Label fx:id="scaleCurvesLabel" text=" Scale Curves to Fit" />
 			</children>
 		</HBox>
-		
-		<Separator maxHeight="1"/>
-		
-		<ScrollPane fx:id="listOfLineScrollPane" fitToWidth="true" >
+
+		<Separator maxHeight="1" />
+
+	<!-- 	<ScrollPane fx:id="listOfLineScrollPane" fitToWidth="true">  -->
 			<VBox fx:id="listOfLinesVBox" />
-		</ScrollPane>
-    
+	<!-- 	</ScrollPane>  -->
+
 	</VBox>
+	
+	</ScrollPane>
 
 	<VBox fx:id="canvasBox" />
 

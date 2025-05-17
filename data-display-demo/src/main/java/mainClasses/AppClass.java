@@ -10,12 +10,9 @@ import javafx.stage.Stage;
 
 public class AppClass extends Application {
 	
-	private final static String appTitle = "GraphEasy";
-	public final static String appIconFileName = "linechart.png";
-	
 	Logger logger;
-	public static final int minimumStageWidth = 600;
-	public static final int minimumStageHeight = 600;
+	public static final int defaultStageWidth = 600;
+	public static final int defaultStageHeight = 600;
 	
 
 	@Override
@@ -37,18 +34,7 @@ public class AppClass extends Application {
 		loader.load();
 		MainController controller = loader.getController();
 		controller.prepareUI();
-		
-		Stage stage = new Stage();
-		stage.setTitle(appTitle);
-		Image icon = new Image(getClass().getResourceAsStream("/" + appIconFileName)); // Adjust path if needed
-		stage.getIcons().add(icon);
-		stage.setResizable(false);
-		Scene scene = new Scene(controller.getMain());
-		stage.setScene(scene);
-		
-		
-		
-		
+		Stage stage = controller.getStage();
 		stage.showAndWait();
 		
 	}

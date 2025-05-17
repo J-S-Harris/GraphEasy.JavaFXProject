@@ -2,9 +2,7 @@ package easterEggs;
 
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Scene;
-import javafx.scene.image.Image;
 import javafx.stage.Stage;
-import mainClasses.AppClass;
 import mainClasses.BubbleWrapController;
 
 public class EasterEggMethods {
@@ -31,8 +29,6 @@ public class EasterEggMethods {
 
 		Stage stage = new Stage();
 		stage.setTitle(youFoundAnEasterEggTitle);
-		Image icon = new Image(getClass().getResourceAsStream("/" + AppClass.appIconFileName)); // Adjust path if needed
-		stage.getIcons().add(icon);
 		Scene scene = new Scene(controller.getMain());
 		stage.setScene(scene);
 		stage.showAndWait();

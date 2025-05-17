@@ -10,11 +10,14 @@ import javafx.event.ActionEvent;
 import javafx.event.EventHandler;
 import javafx.fxml.FXML;
 import javafx.geometry.Insets;
+import javafx.geometry.Pos;
 import javafx.scene.Parent;
+import javafx.scene.Scene;
 import javafx.scene.canvas.Canvas;
 import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Alert.AlertType;
+import javafx.scene.image.Image;
 import javafx.scene.control.Button;
 import javafx.scene.control.CheckBox;
 import javafx.scene.control.Label;
@@ -30,6 +33,7 @@ import javafx.scene.layout.Priority;
 import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
+import javafx.stage.Stage;
 import net.objecthunter.exp4j.Expression;
 import net.objecthunter.exp4j.ExpressionBuilder;
 
@@ -47,8 +51,13 @@ public class MainController {
 	// Allow user to import/export data
 	// Unit tests
 
+	private final static String appTitle = "GraphEasy";
+	public final static String appIconFileName = "linechart.png";
+	
 	ArrayList<GraphData> graphDataPoints = new ArrayList<>();
 
+	Stage stage;
+	
 	Canvas canvas;
 	GraphicsContext gc;
 
@@ -71,7 +80,7 @@ public class MainController {
 	@FXML
 	VBox listOfLinesVBox;
 	@FXML
-	ScrollPane listOfLineScrollPane;
+	ScrollPane listOfLineScrollPane, leftPanelScrollPane;
 	@FXML
 	CheckBox scaleCurvesCheckBox;
 	@FXML
@@ -88,7 +97,17 @@ public class MainController {
 	Label overlayMultipleLabel;
 	@FXML
 	Label scaleCurvesLabel;
+	@FXML
+	Label intervalSizeLabel, canvasSizeLabel;
+	@FXML
+	Button decreaseIntervalButton, increaseIntervalButton;
+	@FXML
+	Button decreasecanvasSizeButton, increasecanvasSizeButton;
 
+	int canvasSizeChangeInterval = 100;
+	int canvasMinimumSize = 400;
+	int canvasMaximumSize = 1400;
+	
 	Color canvasBackGroundColour = Color.BEIGE;
 	Color canvasAxisColour = Color.BLACK;
 	Color canvasBackgroundColour = new Color(0.5, 0.5, 0.5, 0.5); // Grey
@@ -98,8 +117,13 @@ public class MainController {
 	int canvasLineWidth = 2;
 	double backgroundLineWidth = 0.5;
 
-	int gridInterval = 100;
-
+	double gridInterval = 50;
+	double gridIntervalMinimumValue = 25;
+	double gridIntervalMaximumValue = 800;
+	int gridIntervalChangeFactor = 2;
+	
+	int smallButtonMargin = 5;
+	
 	final static String fxmlFileName = "/mainFXML.fxml";
 
 	final String removeRowString = "x";
@@ -130,10 +154,21 @@ public class MainController {
 		overlayMultipleCheckBox.setSelected(true);
 		drawAxes(1);
 		drawBackgroundGrid(1);
-		
 		addTooltips();
+		setCheckBoxEventHandlers();
+		setSmallButtonProperties();
 
-		VBox.setVgrow(listOfLineScrollPane, Priority.ALWAYS);
+		// non-specific vvv
+		
+//		listOfLineScrollPane.setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
+		leftPanelScrollPane.setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
+		leftPanelScrollPane.setVbarPolicy(ScrollPane.ScrollBarPolicy.AS_NEEDED);
+		
+		leftPanelScrollPane.hvalueProperty().addListener((obs, oldVal, newVal) -> {
+			leftPanelScrollPane.setHvalue(0); // Always scroll left
+		});
+		
+//		VBox.setVgrow(listOfLineScrollPane, Priority.ALWAYS);
 
 		formulaEntryTF.setText(formulaBoxStartingText);
 		Platform.runLater(() -> {
@@ -143,8 +178,9 @@ public class MainController {
 		HBox.setHgrow(confirmButton, Priority.ALWAYS);
 		confirmButton.setMaxWidth(Double.MAX_VALUE); // Ensures full width
 
-		int margin = 10;
-		leftPanelVBox.getChildren().forEach(x -> VBox.setMargin(x, new Insets(margin, margin, margin, margin)));
+		int margin = 7;
+		
+		leftPanelVBox.getChildren().forEach(x -> VBox.setMargin(x, new Insets(margin, 0, margin, margin)));
 
 		formulaEntryTF.setOnAction(event -> {
 			setCurveToCanvas();
@@ -152,33 +188,6 @@ public class MainController {
 
 		drawBackgroundCheckBox.setSelected(true);
 		drawAxesCheckBox.setSelected(true);
-
-		drawBackgroundCheckBox.setOnAction(new EventHandler<ActionEvent>() {
-			@Override
-			public void handle(ActionEvent event) {
-				redrawLinesOnGraphFromCache();
-			}
-		});
-		drawAxesCheckBox.setOnAction(new EventHandler<ActionEvent>() {
-			@Override
-			public void handle(ActionEvent event) {
-				redrawLinesOnGraphFromCache();
-			}
-		});
-		overlayMultipleCheckBox.setOnAction(new EventHandler<ActionEvent>() {
-			@Override
-			public void handle(ActionEvent event) {
-				redrawLinesOnGraphFromCache();
-			}
-		});
-		scaleCurvesCheckBox.setOnAction(new EventHandler<ActionEvent>() {
-			@Override
-			public void handle(ActionEvent event) {
-				redrawLinesOnGraphFromCache();
-			}
-		});
-//		overlayMultipleCheckBox
-//		scaleCurvesCheckBox
 
 	}
 
@@ -220,8 +229,8 @@ public class MainController {
 
 	private void createDefaultCanvas() {
 		canvas = new Canvas();
-		canvas.setHeight(AppClass.minimumStageHeight);
-		canvas.setWidth(AppClass.minimumStageWidth);
+		canvas.setHeight(AppClass.defaultStageHeight);
+		canvas.setWidth(AppClass.defaultStageWidth);
 
 		int canvasMargin = 5;
 		HBox.setMargin(canvasBox, new Insets(canvasMargin, canvasMargin, canvasMargin, canvasMargin));
@@ -396,17 +405,30 @@ public class MainController {
 	private void drawBackgroundGrid(double scale) {
 		gc.setStroke(canvasBackgroundColour);
 
-		int yValue = gridInterval;
-		while (yValue <= canvas.getHeight()) {
-			gc.strokeLine(0, yValue, canvas.getWidth(), yValue);
-			yValue += gridInterval;
+		// Draw Y lines
+		double startingYValue = canvas.getHeight() / 2;
+		while (startingYValue >= 0) {
+			gc.strokeLine(0, startingYValue, canvas.getWidth(), startingYValue);
+			startingYValue -= gridInterval;
 		}
-
-		int xValue = gridInterval;
-		while (xValue <= canvas.getWidth()) {
-			gc.strokeLine(xValue, 0, xValue, canvas.getHeight());
-			xValue += gridInterval;
+		startingYValue = canvas.getHeight() / 2;
+		while (startingYValue <= canvas.getHeight()) {
+			gc.strokeLine(0, startingYValue, canvas.getWidth(), startingYValue);
+			startingYValue += gridInterval;
 		}
+		
+		// Draw X Lines
+		double startingXValue = canvas.getWidth() / 2;
+		while (startingXValue >= 0) {
+			gc.strokeLine(startingXValue, 0, startingXValue, canvas.getHeight());
+			startingXValue -= gridInterval;
+		}
+		startingXValue = canvas.getWidth() / 2;
+		while (startingXValue <= canvas.getWidth()) {
+			gc.strokeLine(startingXValue, 0, startingXValue, canvas.getHeight());
+			startingXValue += gridInterval;
+		}
+		
 	}
 
 	private double getScalingFactor(ArrayList<Double> rawYValues) {
@@ -649,4 +671,107 @@ public class MainController {
 		formulaEntryTF.positionCaret(output.length() + endOffset);
 	}
 
+	public void increaseBackgroundGridInterval() {
+		double newValue = gridInterval * gridIntervalChangeFactor; 
+		if(newValue <= gridIntervalMaximumValue) {
+			gridInterval = newValue;
+		}
+		redrawLinesOnGraphFromCache();
+	}
+	
+	public void decreaseBackgroundGridInterval() {
+		double newValue = gridInterval / gridIntervalChangeFactor; 
+		if(newValue >= gridIntervalMinimumValue) {
+			gridInterval = newValue;
+		}
+		redrawLinesOnGraphFromCache();
+	}
+
+	public void decreaseCanvasSize() { // Note: atm it assumes width and height are the same
+		double newSize = canvas.getHeight() - canvasSizeChangeInterval;
+		if(newSize >= canvasMinimumSize) {
+			resizeCanvas(newSize, -canvasSizeChangeInterval);
+		}
+		recalculateAndRedrawLinesFromCache();
+	}
+	
+
+	public void increaseCanvasSize() { // Note: atm it assumes width and height are the same
+		double newSize = canvas.getHeight() + canvasSizeChangeInterval;
+		if(newSize <= canvasMaximumSize) {
+			resizeCanvas(newSize, canvasSizeChangeInterval);
+		}
+		recalculateAndRedrawLinesFromCache();
+	}
+
+	private void recalculateAndRedrawLinesFromCache() {
+		graphDataPoints.forEach(data -> recalculateYValues(data));
+		redrawLinesOnGraphFromCache();
+	}
+	
+	private void resizeCanvas(double newCanvasSize, double newStageSize) {
+		canvas.setHeight(newCanvasSize);
+		canvas.setWidth(newCanvasSize);
+		stage.setHeight(stage.getHeight() + newStageSize);
+		stage.setWidth(stage.getWidth() + newStageSize);
+	}
+	
+	private void recalculateYValues(GraphData data) {
+		data.getyValues().clear();
+		getRawValues(data.getFormula().toLowerCase(), data.getyValues());
+	}
+
+	public Stage getStage() {
+
+		if(stage == null) {
+			stage = new Stage();
+			stage.setTitle(appTitle);
+			Image icon = new Image(getClass().getResourceAsStream("/" + appIconFileName)); // Adjust path if needed
+			stage.getIcons().add(icon);
+			stage.setResizable(false);
+			Scene scene = new Scene(getMain());
+			stage.setScene(scene);
+		}
+		return stage;
+	}
+
+	private void setSmallButtonProperties() {
+		intervalSizeLabel.setMaxWidth(Double.MAX_VALUE);
+		intervalSizeLabel.setMaxHeight(Double.MAX_VALUE);
+		HBox.setMargin(increaseIntervalButton, new Insets(smallButtonMargin, smallButtonMargin, smallButtonMargin, smallButtonMargin));
+		HBox.setMargin(decreaseIntervalButton, new Insets(smallButtonMargin, smallButtonMargin, smallButtonMargin, smallButtonMargin));
+		
+		canvasSizeLabel.setMaxWidth(Double.MAX_VALUE);
+		canvasSizeLabel.setMaxHeight(Double.MAX_VALUE);
+		HBox.setMargin(increasecanvasSizeButton, new Insets(smallButtonMargin, smallButtonMargin, smallButtonMargin, smallButtonMargin));
+		HBox.setMargin(decreasecanvasSizeButton, new Insets(smallButtonMargin, smallButtonMargin, smallButtonMargin, smallButtonMargin));		
+	}
+
+	private void setCheckBoxEventHandlers() {
+		drawBackgroundCheckBox.setOnAction(new EventHandler<ActionEvent>() {
+			@Override
+			public void handle(ActionEvent event) {
+				redrawLinesOnGraphFromCache();
+			}
+		});
+		drawAxesCheckBox.setOnAction(new EventHandler<ActionEvent>() {
+			@Override
+			public void handle(ActionEvent event) {
+				redrawLinesOnGraphFromCache();
+			}
+		});
+		overlayMultipleCheckBox.setOnAction(new EventHandler<ActionEvent>() {
+			@Override
+			public void handle(ActionEvent event) {
+				redrawLinesOnGraphFromCache();
+			}
+		});
+		scaleCurvesCheckBox.setOnAction(new EventHandler<ActionEvent>() {
+			@Override
+			public void handle(ActionEvent event) {
+				redrawLinesOnGraphFromCache();
+			}
+		});
+	}
+	
 }
