@@ -1,5 +1,5 @@
 # GraphEasy - JavaFX App
-GraphEasy is a simple tool to display curves defined by the general formula "y=x".
+GraphEasy is a Simple, educational tool for visualising formulas on a graph.
 
 It is written entirely using Java and JavaFX, and currently unfinished.
 
