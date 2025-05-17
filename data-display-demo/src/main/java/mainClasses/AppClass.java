@@ -11,7 +11,7 @@ import javafx.stage.Stage;
 public class AppClass extends Application {
 	
 	private final static String appTitle = "GraphEasy";
-	private final static String appIconFileName = "linechart.png";
+	public final static String appIconFileName = "linechart.png";
 	
 	Logger logger;
 	public static final int minimumStageWidth = 600;

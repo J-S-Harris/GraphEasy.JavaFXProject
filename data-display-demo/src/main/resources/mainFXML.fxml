@@ -37,28 +37,28 @@
 		<HBox fx:id="drawBackgroundRow">
 			<children>
 				<CheckBox fx:id="drawBackgroundCheckBox" />
-				<Label text=" Draw Background"/>
+				<Label fx:id="drawBackgroundLabel" text=" Draw Background"/>
 			</children>
 		</HBox>
 
 		<HBox fx:id="drawAxesRow">
 			<children>
 				<CheckBox fx:id="drawAxesCheckBox" />
-				<Label text=" Draw Axes"/>
+				<Label fx:id="drawAxesLabel" text=" Draw Axes"/>
 			</children>
 		</HBox>
 		
 		<HBox fx:id="overlayMultipleRow">
 			<children>
 				<CheckBox fx:id="overlayMultipleCheckBox" />
-				<Label text=" Overlay Multiple"/>
+				<Label fx:id="overlayMultipleLabel" text=" Overlay Multiple"/>
 			</children>
 		</HBox>
 
 		<HBox fx:id="scaleCurvesRow">
 			<children>
 				<CheckBox fx:id="scaleCurvesCheckBox" />
-				<Label text=" Scale Curves to Fit"/>
+				<Label fx:id="scaleCurvesLabel" text=" Scale Curves to Fit"/>
 			</children>
 		</HBox>
 		

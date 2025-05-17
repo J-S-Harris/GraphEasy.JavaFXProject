@@ -4,6 +4,7 @@ import java.util.ArrayList;
 
 import javax.script.ScriptException;
 
+import easterEggs.EasterEggMethods;
 import javafx.application.Platform;
 import javafx.event.ActionEvent;
 import javafx.event.EventHandler;
@@ -19,6 +20,7 @@ import javafx.scene.control.CheckBox;
 import javafx.scene.control.Label;
 import javafx.scene.control.ScrollPane;
 import javafx.scene.control.TextField;
+import javafx.scene.control.Tooltip;
 import javafx.scene.layout.Background;
 import javafx.scene.layout.BackgroundFill;
 import javafx.scene.layout.CornerRadii;
@@ -34,23 +36,15 @@ import net.objecthunter.exp4j.ExpressionBuilder;
 public class MainController {
 
 	// TODO Possible next TODOs
-	// y=x^2 doesn't produce a parabola; squared negatives stay negative
-	// y=(x)^2 DOES display as expected, but not y=x^2? Why?
-	// Possible solution: When assessing formula, consider replacing "X" with "(X)"
-	// Then undoing it when the GraphData is created?
-	// TODO I have done this ^^^ - check it works as it should
-	// drawBackground() should draw a thin grid in the background, with ticks and
 	// correct scaling
-	// Then make sure it's displaying as it should, with the right coordinates, etc
+		// Then make sure it's displaying as it should, with the right coordinates, etc
 	// Why is the line dashed when there is a big gap between points?
 	// Make the GraphData remember its colour, so that deleting earlier lines
-	// doesn't change the colour
+		// doesn't change the colour
 	// Make the TextField a typable dropdown that lets the user select previously
-	// added formulas
+		// added formulas
 	// Give user checkbox to de/select from list. Only display selected
 	// Allow user to import/export data
-	// Update the github image with an extra line such as "y=(x/20)^2" to show that
-	// it does expos.
 	// Unit tests
 
 	ArrayList<GraphData> graphDataPoints = new ArrayList<>();
@@ -82,6 +76,18 @@ public class MainController {
 	CheckBox scaleCurvesCheckBox;
 	@FXML
 	Button confirmButton;
+	@FXML
+	Button squareButton;
+	@FXML
+	Button sqrtButton;
+	@FXML
+	Label drawBackgroundLabel;
+	@FXML
+	Label drawAxesLabel;
+	@FXML
+	Label overlayMultipleLabel;
+	@FXML
+	Label scaleCurvesLabel;
 
 	Color canvasBackGroundColour = Color.BEIGE;
 	Color canvasAxisColour = Color.BLACK;
@@ -99,6 +105,17 @@ public class MainController {
 	final String removeRowString = "x";
 	final String formulaBoxStartingText = "y=";
 
+	final String pressEnterOnFormulaTooltip = "Type in a formula, then press enter or press \"Go!\"";
+	final String goButtonTooltip = "Add the curve to the graph";
+	final String listUiTooltip = "Click to add formula to text box";
+	
+	final String squareTooltip = "Square a number";
+	final String squareRootTooltip = "Calculate the square root of a number";
+	final String drawBackgroundTooltip = "Draw the background grid";
+	final String drawAxesTooltip = "Draw axes behind the drawn curves";
+	final String overlayMultipleTooltip = "Allow multiple curves to be drawn";
+	final String scaleCurvesTooltip = "Scale all curves to fit the screen";
+	
 	public HBox getMain() {
 		return main;
 	}
@@ -113,6 +130,8 @@ public class MainController {
 		overlayMultipleCheckBox.setSelected(true);
 		drawAxes(1);
 		drawBackgroundGrid(1);
+		
+		addTooltips();
 
 		VBox.setVgrow(listOfLineScrollPane, Priority.ALWAYS);
 
@@ -161,6 +180,36 @@ public class MainController {
 //		overlayMultipleCheckBox
 //		scaleCurvesCheckBox
 
+	}
+
+	private void addTooltips() {
+
+		Tooltip tooltip;
+		
+		tooltip = new Tooltip(pressEnterOnFormulaTooltip);
+		Tooltip.install(formulaEntryTF, tooltip);
+		
+		tooltip = new Tooltip(goButtonTooltip);
+		Tooltip.install(confirmButton, tooltip);
+		
+		tooltip = new Tooltip(squareTooltip);
+		Tooltip.install(squareButton, tooltip);
+		
+		tooltip = new Tooltip(squareRootTooltip);
+		Tooltip.install(sqrtButton, tooltip);
+		
+		tooltip = new Tooltip(drawBackgroundTooltip);
+		Tooltip.install(drawBackgroundLabel, tooltip);
+		
+		tooltip = new Tooltip(drawAxesTooltip);
+		Tooltip.install(drawAxesLabel, tooltip);
+		
+		tooltip = new Tooltip(overlayMultipleTooltip);
+		Tooltip.install(overlayMultipleLabel, tooltip);
+		
+		tooltip = new Tooltip(scaleCurvesTooltip);
+		Tooltip.install(scaleCurvesLabel, tooltip);
+		
 	}
 
 	private void moveCaretToEndOfFormulaBox() {
@@ -267,7 +316,11 @@ public class MainController {
 		HBox outerHBox = new HBox();
 		VBox.setMargin(outerHBox, new Insets(1, 1, 1, 1));
 		listOfLinesVBox.getChildren().add(outerHBox);
-
+		
+//		outerHBox
+		Tooltip tooltip = new Tooltip(listUiTooltip);
+		Tooltip.install(outerHBox, tooltip);
+		
 		// TODO Make this let the user de/select lines to show
 //		CheckBox checkBox = new CheckBox();
 //		outerHBox.getChildren().add(checkBox);
@@ -282,9 +335,13 @@ public class MainController {
 		label.setMaxWidth(Double.MAX_VALUE);
 		HBox.setHgrow(label, Priority.ALWAYS);
 		outerHBox.getChildren().add(label);
+		
+		outerHBox.setOnMouseClicked(event -> {
+			formulaEntryTF.setText(label.getText().trim());
+			moveCaretToEndOfFormulaBox();
+		});
 
 		deleteButton.setOnAction(event -> {
-
 			boolean identified = false;
 			for (int counter = 0; counter < graphDataPoints.size(); counter++) {
 				if (graphDataPoints.get(counter).getFormula().trim().equalsIgnoreCase(label.getText().trim())) {
@@ -553,10 +610,22 @@ public class MainController {
 
 	public void setCurveToCanvas() {
 		String formula = formulaEntryTF.getText();
+		
+		boolean easterEggTriggered = false;
 		try {
-			createLine(formula);
-		} catch (ScriptException e) {
-			e.printStackTrace(); // Throw popup here?
+			easterEggTriggered = EasterEggMethods.displayMatchingPopup(formula);
+			formulaEntryTF.setText(formulaBoxStartingText);
+			moveCaretToEndOfFormulaBox();
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		
+		if(!easterEggTriggered) {
+			try {
+				createLine(formula);
+			} catch (ScriptException e) {
+				e.printStackTrace(); // Throw popup here?
+			}
 		}
 	}
 
