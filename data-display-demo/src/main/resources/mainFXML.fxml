@@ -36,7 +36,7 @@
 		</VBox>
 
 		<VBox fx:id="panningInputRow">
-			<Label fx:id="panningLabel" text="Panning" />
+			<Label fx:id="panningLabel" text="Panning (Click and drag)" />
 			<Button fx:id="panCentreButton" text="Centre on (0,0)"
 				onAction="#panCentre" />
 			<HBox fx:id="lockPanningHBox" spacing="10">

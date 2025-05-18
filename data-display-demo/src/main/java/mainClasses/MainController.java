@@ -93,8 +93,6 @@ public class MainController {
 	@FXML
 	Label overlayMultipleLabel;
 	@FXML
-	Label scaleCurvesLabel;
-	@FXML
 	Label intervalSizeLabel, canvasSizeLabel;
 	@FXML
 	Button decreaseIntervalButton, increaseIntervalButton;
@@ -110,9 +108,9 @@ public class MainController {
 	double mouseX = 0;
 	double mouseY = 0;
 	
-	Color canvasBackGroundColour = Color.BEIGE;
+	Color canvasBackgroundColour = Color.BEIGE;
 	Color canvasAxisColour = Color.BLACK;
-	Color canvasBackgroundColour = new Color(0.5, 0.5, 0.5, 0.5); // Grey
+	Color canvasBackgroundGridColour = new Color(0.5, 0.5, 0.5, 0.5); // Grey
 	Color[] lineColours = { Color.LIGHTGREEN, Color.ORANGE, Color.BLUEVIOLET, Color.CHARTREUSE, //
 			Color.SALMON, Color.SANDYBROWN, Color.RED, Color.AQUA };
 
@@ -134,15 +132,14 @@ public class MainController {
 
 	final String pressEnterOnFormulaTooltip = "Type in a formula, then press enter or press \"Go!\"";
 	final String goButtonTooltip = "Add the curve to the graph";
-	final String listUiTooltip = "Click to add formula to text box";
-	final String canvasTooltip = "Click and drag to pan. Double click to reset.";
+	final String listUiTooltip = "Click to add this formula to the text box";
+	final String canvasTooltip = "Click and drag to pan. Double click to centre on (0,0)";
 	
 	final String squareTooltip = "Square a number";
-	final String squareRootTooltip = "Calculate the square root of a number";
+	final String squareRootTooltip = "Square root a number";
 	final String drawBackgroundTooltip = "Draw the background grid";
-	final String drawAxesTooltip = "Draw axes behind the drawn curves";
+	final String drawAxesTooltip = "Draw the X and Y axes";
 	final String overlayMultipleTooltip = "Allow multiple curves to be drawn";
-	final String scaleCurvesTooltip = "Scale all curves to fit the screen";
 	
 	private int panningYInterval = 25;
 	private int initialPanningOffsetY = 0;
@@ -238,8 +235,7 @@ public class MainController {
 		Tooltip.install(drawBackgroundLabel, new Tooltip(drawBackgroundTooltip));
 		Tooltip.install(drawAxesLabel, new Tooltip(drawAxesTooltip));
 		Tooltip.install(overlayMultipleLabel, new Tooltip(overlayMultipleTooltip));
-		Tooltip.install(scaleCurvesLabel, new Tooltip(scaleCurvesTooltip));
-		Tooltip.install(canvas, new Tooltip(canvasTooltip));
+//		Tooltip.install(canvas, new Tooltip(canvasTooltip));
 	}
 
 	private void moveCaretToEndOfFormulaBox() {
@@ -265,7 +261,7 @@ public class MainController {
 	}
 
 	private void paintBackground() {
-		gc.setFill(canvasBackGroundColour);
+		gc.setFill(canvasBackgroundColour);
 		gc.fillRect(0, 0, canvas.getWidth(), canvas.getHeight());
 	}
 
@@ -401,7 +397,7 @@ public class MainController {
 
 		// Optionally: Clear the canvas if only one is to be drawn
 		if (!getOverlayMultiple()) {
-			gc.clearRect(0, 0, canvas.getWidth(), canvas.getHeight());
+			paintBackground();
 		}
 
 		// Optionally: scale the y values to fit canvas
@@ -423,7 +419,7 @@ public class MainController {
 	}
 
 	private void drawBackgroundGrid(double scale) {
-		gc.setStroke(canvasBackgroundColour);
+		gc.setStroke(canvasBackgroundGridColour);
 
 		// Draw Horizontal lines
 		double startingYValue = panningOffsetY + (canvas.getHeight() / 2);
