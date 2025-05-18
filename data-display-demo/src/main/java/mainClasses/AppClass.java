@@ -11,7 +11,7 @@ import javafx.stage.Stage;
 public class AppClass extends Application {
 	
 	Logger logger;
-	public static final int defaultStageWidth = 600;
+	public static final int defaultStageWidth = 800;
 	public static final int defaultStageHeight = 600;
 	
 
@@ -41,12 +41,12 @@ public class AppClass extends Application {
 	
 	
 	private void startApp() {
+//		log("Started app");
 		logger = Logger.getLogger(AppClass.class.getName());
-		log("Started app");
 	}
 	
 	private void closeApp() {
-		log("Closing app");
+//		log("Closing app");
 	}
 	
 	private void log(String string) {

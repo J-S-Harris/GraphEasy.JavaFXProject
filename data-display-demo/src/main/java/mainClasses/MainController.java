@@ -39,9 +39,7 @@ import net.objecthunter.exp4j.ExpressionBuilder;
 public class MainController {
 
 	// TODO Possible next TODOs
-	// correct scaling
-		// Then make sure it's displaying as it should, with the right coordinates, etc
-	// Why is the line dashed when there is a big gap between points?
+	// Make the zoom work; the buttons are disabled in the FXML
 	// Make the GraphData remember its colour, so that deleting earlier lines
 		// doesn't change the colour
 	// Give user checkbox to de/select from list. Only display selected
@@ -89,6 +87,8 @@ public class MainController {
 	@FXML
 	Label drawBackgroundLabel;
 	@FXML
+	Label zoomLabel;
+	@FXML
 	Label drawAxesLabel;
 	@FXML
 	Label overlayMultipleLabel;
@@ -100,10 +100,20 @@ public class MainController {
 	Button decreasecanvasSizeButton, increasecanvasSizeButton;
 	@FXML
 	Button panCentreButton;
+	@FXML
+	Button zoomOutButton, zoomInButton;
+	@FXML
+	HBox specialCharsButtonHBox;
+	@FXML
+	VBox zoomAdjustmentRow;
 
 	int canvasSizeChangeInterval = 100;
 	int canvasMinimumSize = 400;
 	int canvasMaximumSize = 1400;
+	
+	double initialZoomFactor = 1;
+	double zoomFactor = 1;
+	double zoomInterval = 0.5;
 	
 	double mouseX = 0;
 	double mouseY = 0;
@@ -123,7 +133,7 @@ public class MainController {
 	double gridIntervalMaximumValue = 800;
 	int gridIntervalChangeFactor = 2;
 	
-	int smallButtonMargin = 5;
+	int smallButtonMargin = 10;
 	
 	final static String fxmlFileName = "/mainFXML.fxml";
 
@@ -191,7 +201,7 @@ public class MainController {
 		HBox.setHgrow(confirmButton, Priority.ALWAYS);
 		confirmButton.setMaxWidth(Double.MAX_VALUE); // Ensures full width
 
-		int margin = 7;
+		int margin = 6;
 		
 		leftPanelVBox.getChildren().forEach(x -> VBox.setMargin(x, new Insets(margin, 0, margin, margin)));
 
@@ -662,7 +672,7 @@ public class MainController {
 			try {
 				createLine(formula);
 			} catch (ScriptException e) {
-				e.printStackTrace(); // Throw popup here?
+//				e.printStackTrace(); // Throw popup here?
 			}
 		}
 	}
@@ -700,18 +710,20 @@ public class MainController {
 	}
 
 	public void decreaseCanvasSize() { // Note: atm it assumes width and height are the same
-		double newSize = canvas.getHeight() - canvasSizeChangeInterval;
-		if(newSize >= canvasMinimumSize) {
-			resizeCanvas(newSize, -canvasSizeChangeInterval);
+		double newHeight = canvas.getHeight() - canvasSizeChangeInterval;
+		double newWidth = canvas.getWidth() - canvasSizeChangeInterval;
+		if(newHeight >= canvasMinimumSize) {
+			resizeCanvas(newHeight, newWidth, -canvasSizeChangeInterval);
 		}
 		recalculateAndRedrawLinesFromCache();
 	}
 	
 
 	public void increaseCanvasSize() { // Note: atm it assumes width and height are the same
-		double newSize = canvas.getHeight() + canvasSizeChangeInterval;
-		if(newSize <= canvasMaximumSize) {
-			resizeCanvas(newSize, canvasSizeChangeInterval);
+		double newHeight = canvas.getHeight() + canvasSizeChangeInterval;
+		double newWidth = canvas.getWidth() + canvasSizeChangeInterval;
+		if(newHeight <= canvasMaximumSize) {
+			resizeCanvas(newHeight, newWidth, canvasSizeChangeInterval);
 		}
 		recalculateAndRedrawLinesFromCache();
 	}
@@ -721,11 +733,11 @@ public class MainController {
 		redrawLinesOnGraphFromCache();
 	}
 	
-	private void resizeCanvas(double newCanvasSize, double newStageSize) {
-		canvas.setHeight(newCanvasSize);
-		canvas.setWidth(newCanvasSize);
-		stage.setHeight(stage.getHeight() + newStageSize);
-		stage.setWidth(stage.getWidth() + newStageSize);
+	private void resizeCanvas(double newHeight, double newWidth, int canvasSizeChangeInterval) {
+		canvas.setHeight(newHeight);
+		stage.setHeight(stage.getHeight() + canvasSizeChangeInterval);
+		canvas.setWidth(newWidth);
+		stage.setWidth(stage.getWidth() + canvasSizeChangeInterval);
 	}
 	
 	private void recalculateYValues(GraphData data) {
@@ -747,15 +759,20 @@ public class MainController {
 	}
 
 	private void setSmallButtonProperties() {
-		intervalSizeLabel.setMaxWidth(Double.MAX_VALUE);
-		intervalSizeLabel.setMaxHeight(Double.MAX_VALUE);
-		HBox.setMargin(increaseIntervalButton, new Insets(smallButtonMargin, smallButtonMargin, smallButtonMargin, smallButtonMargin));
-		HBox.setMargin(decreaseIntervalButton, new Insets(smallButtonMargin, smallButtonMargin, smallButtonMargin, smallButtonMargin));
 		
-		canvasSizeLabel.setMaxWidth(Double.MAX_VALUE);
-		canvasSizeLabel.setMaxHeight(Double.MAX_VALUE);
-		HBox.setMargin(increasecanvasSizeButton, new Insets(smallButtonMargin, smallButtonMargin, smallButtonMargin, smallButtonMargin));
-		HBox.setMargin(decreasecanvasSizeButton, new Insets(smallButtonMargin, smallButtonMargin, smallButtonMargin, smallButtonMargin));		
+		Insets insets = new Insets(0, smallButtonMargin, 0, 0);
+		
+		specialCharsButtonHBox.getChildren().forEach(button -> HBox.setMargin(button, insets));
+		
+		HBox.setMargin(increaseIntervalButton, insets);
+		HBox.setMargin(decreaseIntervalButton, insets);
+
+		HBox.setMargin(increasecanvasSizeButton, insets);
+		HBox.setMargin(decreasecanvasSizeButton, insets);		
+		
+		// TODO Finish implementing zoom then re-enable this
+//		HBox.setMargin(zoomInButton, insets);
+//		HBox.setMargin(zoomOutButton, insets);		
 	}
 
 	private void setCheckBoxEventHandlers() {
@@ -820,6 +837,18 @@ public class MainController {
 		recalculateAndRedrawLinesFromCache();
 	}
 
+	public void zoomIn() {
+//		System.out.println("ZOOM IN");
+		zoomFactor += zoomInterval;
+		// TODO Actually do the zoom here
+		recalculateAndRedrawLinesFromCache();
+	}
 	
+	public void zoomOut() {
+//		System.out.println("ZOOM OUT");
+		zoomFactor -= zoomInterval;
+		// TODO Actually do the zoom here
+		recalculateAndRedrawLinesFromCache();
+	}
 	
 }

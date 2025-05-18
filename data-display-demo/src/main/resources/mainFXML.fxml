@@ -23,11 +23,9 @@
 			</children>
 		</VBox>
 
-		<Separator maxHeight="1" />
-
 		<VBox fx:id="specialCharacterInputRow">
 			<Label fx:id="specialCharsLabel" text="Special Characters" />
-			<HBox spacing="10">
+			<HBox fx:id="specialCharsButtonHBox">
 				<Button fx:id="squareButton" text="X^y"
 					onAction="#addSquareToTextField" />
 				<Button fx:id="sqrtButton" text="√"
@@ -35,14 +33,16 @@
 			</HBox>
 		</VBox>
 
+		<Separator maxHeight="1" />
+		
 		<VBox fx:id="panningInputRow">
 			<Label fx:id="panningLabel" text="Panning (Click and drag)" />
 			<Button fx:id="panCentreButton" text="Centre on (0,0)"
 				onAction="#panCentre" />
-			<HBox fx:id="lockPanningHBox" spacing="10">
+			<HBox fx:id="lockPanningHBox" >
 				<children>
 					<CheckBox fx:id="lockPanningCheckBox" />
-					<Label fx:id="lockPanningLabel" text="Lock Panning" />
+					<Label fx:id="lockPanningLabel" text=" Lock Panning" />
 				</children>
 			</HBox>
 		</VBox>
@@ -72,6 +72,20 @@
 				</HBox>
 			</children>
 		</VBox>
+		
+		<!-- 
+		<VBox fx:id="zoomAdjustmentRow">
+			<children>
+				<Label fx:id="zoomLabel" text="Zoom" />
+				<HBox>
+				<Button fx:id="zoomOutButton" text="-"
+					onAction="#zoomOut" />
+				<Button fx:id="zoomInButton" text="+"
+					onAction="#zoomIn" />
+				</HBox>
+			</children>
+		</VBox>
+		 -->
 		
 		<Separator maxHeight="1" />
 
