@@ -27,11 +27,23 @@
 
 		<VBox fx:id="specialCharacterInputRow">
 			<Label fx:id="specialCharsLabel" text="Special Characters" />
-			<HBox spacing="10"> <!-- Adjust spacing value as needed -->
+			<HBox spacing="10">
 				<Button fx:id="squareButton" text="X^y"
 					onAction="#addSquareToTextField" />
 				<Button fx:id="sqrtButton" text="√"
 					onAction="#addSqrtToTextField" />
+			</HBox>
+		</VBox>
+
+		<VBox fx:id="panningInputRow">
+			<Label fx:id="panningLabel" text="Panning" />
+			<Button fx:id="panCentreButton" text="Centre on (0,0)"
+				onAction="#panCentre" />
+			<HBox fx:id="lockPanningHBox" spacing="10">
+				<children>
+					<CheckBox fx:id="lockPanningCheckBox" />
+					<Label fx:id="lockPanningLabel" text="Lock Panning" />
+				</children>
 			</HBox>
 		</VBox>
 
@@ -81,13 +93,6 @@
 			<children>
 				<CheckBox fx:id="overlayMultipleCheckBox" />
 				<Label fx:id="overlayMultipleLabel" text=" Overlay Multiple" />
-			</children>
-		</HBox>
-
-		<HBox fx:id="scaleCurvesRow">
-			<children>
-				<CheckBox fx:id="scaleCurvesCheckBox" />
-				<Label fx:id="scaleCurvesLabel" text=" Scale Curves to Fit" />
 			</children>
 		</HBox>
 

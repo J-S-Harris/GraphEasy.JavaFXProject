@@ -10,20 +10,19 @@ import javafx.event.ActionEvent;
 import javafx.event.EventHandler;
 import javafx.fxml.FXML;
 import javafx.geometry.Insets;
-import javafx.geometry.Pos;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.canvas.Canvas;
 import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Alert.AlertType;
-import javafx.scene.image.Image;
 import javafx.scene.control.Button;
 import javafx.scene.control.CheckBox;
 import javafx.scene.control.Label;
 import javafx.scene.control.ScrollPane;
 import javafx.scene.control.TextField;
 import javafx.scene.control.Tooltip;
+import javafx.scene.image.Image;
 import javafx.scene.layout.Background;
 import javafx.scene.layout.BackgroundFill;
 import javafx.scene.layout.CornerRadii;
@@ -45,8 +44,6 @@ public class MainController {
 	// Why is the line dashed when there is a big gap between points?
 	// Make the GraphData remember its colour, so that deleting earlier lines
 		// doesn't change the colour
-	// Make the TextField a typable dropdown that lets the user select previously
-		// added formulas
 	// Give user checkbox to de/select from list. Only display selected
 	// Allow user to import/export data
 	// Unit tests
@@ -72,6 +69,8 @@ public class MainController {
 	@FXML
 	CheckBox overlayMultipleCheckBox;
 	@FXML
+	CheckBox lockPanningCheckBox;
+	@FXML
 	CheckBox drawAxesCheckBox;
 	@FXML
 	CheckBox drawBackgroundCheckBox;
@@ -81,8 +80,6 @@ public class MainController {
 	VBox listOfLinesVBox;
 	@FXML
 	ScrollPane listOfLineScrollPane, leftPanelScrollPane;
-	@FXML
-	CheckBox scaleCurvesCheckBox;
 	@FXML
 	Button confirmButton;
 	@FXML
@@ -103,10 +100,15 @@ public class MainController {
 	Button decreaseIntervalButton, increaseIntervalButton;
 	@FXML
 	Button decreasecanvasSizeButton, increasecanvasSizeButton;
+	@FXML
+	Button panCentreButton;
 
 	int canvasSizeChangeInterval = 100;
 	int canvasMinimumSize = 400;
 	int canvasMaximumSize = 1400;
+	
+	double mouseX = 0;
+	double mouseY = 0;
 	
 	Color canvasBackGroundColour = Color.BEIGE;
 	Color canvasAxisColour = Color.BLACK;
@@ -116,7 +118,8 @@ public class MainController {
 
 	int canvasLineWidth = 2;
 	double backgroundLineWidth = 0.5;
-
+	double axesLineWidth = 2;
+	
 	double gridInterval = 50;
 	double gridIntervalMinimumValue = 25;
 	double gridIntervalMaximumValue = 800;
@@ -132,6 +135,7 @@ public class MainController {
 	final String pressEnterOnFormulaTooltip = "Type in a formula, then press enter or press \"Go!\"";
 	final String goButtonTooltip = "Add the curve to the graph";
 	final String listUiTooltip = "Click to add formula to text box";
+	final String canvasTooltip = "Click and drag to pan. Double click to reset.";
 	
 	final String squareTooltip = "Square a number";
 	final String squareRootTooltip = "Calculate the square root of a number";
@@ -139,6 +143,14 @@ public class MainController {
 	final String drawAxesTooltip = "Draw axes behind the drawn curves";
 	final String overlayMultipleTooltip = "Allow multiple curves to be drawn";
 	final String scaleCurvesTooltip = "Scale all curves to fit the screen";
+	
+	private int panningYInterval = 25;
+	private int initialPanningOffsetY = 0;
+	private int panningOffsetY = 0;
+	
+	private int panningXInterval = 25;
+	private int initialPanningOffsetX = 0;
+	private int panningOffsetX = 0;
 	
 	public HBox getMain() {
 		return main;
@@ -157,6 +169,8 @@ public class MainController {
 		addTooltips();
 		setCheckBoxEventHandlers();
 		setSmallButtonProperties();
+		addTooltips();
+		setCanvasListeners();
 
 		// non-specific vvv
 		
@@ -170,6 +184,8 @@ public class MainController {
 		
 //		VBox.setVgrow(listOfLineScrollPane, Priority.ALWAYS);
 
+		VBox.setMargin(panCentreButton, new Insets(5, 0, 5, 0));
+		
 		formulaEntryTF.setText(formulaBoxStartingText);
 		Platform.runLater(() -> {
 			moveCaretToEndOfFormulaBox();
@@ -191,34 +207,39 @@ public class MainController {
 
 	}
 
-	private void addTooltips() {
+	private void setCanvasListeners() {
+		canvas.setOnMousePressed(event -> {
+			mouseX = event.getX();
+			mouseY = event.getY();
+		});
+		
+		canvas.setOnMouseDragged(event -> {
+			if(!getAllowedToPan()) {
+				return;
+			}
+			panningOffsetX += (event.getX() - mouseX);
+			mouseX = event.getX();
+			panningOffsetY += (event.getY() - mouseY);
+			mouseY = event.getY();
+			recalculateAndRedrawLinesFromCache();
+		});
+		canvas.setOnMouseClicked(event -> {
+			if (event.getClickCount() == 2) {
+				panCentre();
+			}
+		});
+	}
 
-		Tooltip tooltip;
-		
-		tooltip = new Tooltip(pressEnterOnFormulaTooltip);
-		Tooltip.install(formulaEntryTF, tooltip);
-		
-		tooltip = new Tooltip(goButtonTooltip);
-		Tooltip.install(confirmButton, tooltip);
-		
-		tooltip = new Tooltip(squareTooltip);
-		Tooltip.install(squareButton, tooltip);
-		
-		tooltip = new Tooltip(squareRootTooltip);
-		Tooltip.install(sqrtButton, tooltip);
-		
-		tooltip = new Tooltip(drawBackgroundTooltip);
-		Tooltip.install(drawBackgroundLabel, tooltip);
-		
-		tooltip = new Tooltip(drawAxesTooltip);
-		Tooltip.install(drawAxesLabel, tooltip);
-		
-		tooltip = new Tooltip(overlayMultipleTooltip);
-		Tooltip.install(overlayMultipleLabel, tooltip);
-		
-		tooltip = new Tooltip(scaleCurvesTooltip);
-		Tooltip.install(scaleCurvesLabel, tooltip);
-		
+	private void addTooltips() {
+		Tooltip.install(formulaEntryTF, new Tooltip(pressEnterOnFormulaTooltip));
+		Tooltip.install(confirmButton, new Tooltip(goButtonTooltip));
+		Tooltip.install(squareButton, new Tooltip(squareTooltip));
+		Tooltip.install(sqrtButton, new Tooltip(squareRootTooltip));
+		Tooltip.install(drawBackgroundLabel, new Tooltip(drawBackgroundTooltip));
+		Tooltip.install(drawAxesLabel, new Tooltip(drawAxesTooltip));
+		Tooltip.install(overlayMultipleLabel, new Tooltip(overlayMultipleTooltip));
+		Tooltip.install(scaleCurvesLabel, new Tooltip(scaleCurvesTooltip));
+		Tooltip.install(canvas, new Tooltip(canvasTooltip));
 	}
 
 	private void moveCaretToEndOfFormulaBox() {
@@ -259,7 +280,7 @@ public class MainController {
 		moveCaretToEndOfFormulaBox();
 
 		ArrayList<Double> rawYValues = new ArrayList<Double>();
-		getRawValues(formula, rawYValues);
+		calculateRawValues(formula, rawYValues);
 
 		GraphData data = new GraphData("Y" + formula.toUpperCase().replace("*X", "X"),
 				"Y" + formula.toUpperCase().replace("*X", "X"), rawYValues);
@@ -327,8 +348,7 @@ public class MainController {
 		listOfLinesVBox.getChildren().add(outerHBox);
 		
 //		outerHBox
-		Tooltip tooltip = new Tooltip(listUiTooltip);
-		Tooltip.install(outerHBox, tooltip);
+		Tooltip.install(outerHBox, new Tooltip(listUiTooltip));
 		
 		// TODO Make this let the user de/select lines to show
 //		CheckBox checkBox = new CheckBox();
@@ -405,25 +425,25 @@ public class MainController {
 	private void drawBackgroundGrid(double scale) {
 		gc.setStroke(canvasBackgroundColour);
 
-		// Draw Y lines
-		double startingYValue = canvas.getHeight() / 2;
+		// Draw Horizontal lines
+		double startingYValue = panningOffsetY + (canvas.getHeight() / 2);
 		while (startingYValue >= 0) {
 			gc.strokeLine(0, startingYValue, canvas.getWidth(), startingYValue);
 			startingYValue -= gridInterval;
 		}
-		startingYValue = canvas.getHeight() / 2;
+		startingYValue = panningOffsetY + (canvas.getHeight() / 2);
 		while (startingYValue <= canvas.getHeight()) {
 			gc.strokeLine(0, startingYValue, canvas.getWidth(), startingYValue);
 			startingYValue += gridInterval;
 		}
 		
-		// Draw X Lines
-		double startingXValue = canvas.getWidth() / 2;
+		// Draw Vertical Lines
+		double startingXValue = panningOffsetX + (canvas.getWidth() / 2);
 		while (startingXValue >= 0) {
 			gc.strokeLine(startingXValue, 0, startingXValue, canvas.getHeight());
 			startingXValue -= gridInterval;
 		}
-		startingXValue = canvas.getWidth() / 2;
+		startingXValue = panningOffsetX + (canvas.getWidth() / 2);
 		while (startingXValue <= canvas.getWidth()) {
 			gc.strokeLine(startingXValue, 0, startingXValue, canvas.getHeight());
 			startingXValue += gridInterval;
@@ -432,13 +452,16 @@ public class MainController {
 	}
 
 	private double getScalingFactor(ArrayList<Double> rawYValues) {
-		// TODO Consider; this squashes each line individually
-		// Would it be preferable to return a scaling factor for ALL lines/data points?
-		if (getScaleCurves()) {
-			double largest = findLargest(rawYValues);
-			return canvas.getHeight() / largest;
-		}
+		// TODO Consider - is this needed any more? Just returns 1
 		return 1;
+	}
+	
+	private boolean getAllowedToPan() {
+		return !getLockPanningCheckBoxSelected();
+	}
+	
+	private boolean getLockPanningCheckBoxSelected() {
+		return lockPanningCheckBox.isSelected();
 	}
 
 	private String tidyAndCorrectFormula(String formula) {
@@ -457,19 +480,17 @@ public class MainController {
 	private void drawAxes(double scale) {
 
 		gc.setStroke(canvasAxisColour);
-		double lineThickness = 2;
 
 		// Draw vertical line
-		gc.strokeLine(canvas.getWidth() / 2 - lineThickness / 2, 0, canvas.getWidth() / 2 + lineThickness / 2,
-				canvas.getHeight());
+		double xValue = panningOffsetX + (canvas.getWidth()/2) - (axesLineWidth/2); 
+		gc.strokeLine(xValue, 0, xValue, canvas.getHeight());
 
 		// Draw horizontal line
-		// TODO This isn't right; needs to take scale into account
-		double yValue = canvas.getHeight() / 2;
-		gc.strokeLine(0, yValue, canvas.getWidth(), yValue + lineThickness);
+		// TODO Is this right?; needs to take scale into account?
+		double yValue = panningOffsetY + canvas.getHeight() / 2;
+		gc.strokeLine(0, yValue, canvas.getWidth(), yValue + axesLineWidth);
 
 		// TODO draw little tick lines and numbers across the axes
-		// TODO Make the scaling OPTIONAL. i.e so the user can just see the
 	}
 
 	private boolean getDrawAxes() {
@@ -496,10 +517,6 @@ public class MainController {
 		Color colour = getNextColour();
 		gc.setStroke(colour);
 
-		// TODO Why does y=x^2 etc give a series of dotted lines?
-		// Due to difference between values?
-		// Draw the line segments with smaller steps?
-
 		for (int counter = 0; counter < yValues.size(); counter++) {
 			double xValue = counter;
 
@@ -508,13 +525,12 @@ public class MainController {
 			}
 
 			 // try-catch is here as the last point will fail
-			double yStartValue = Math.round(canvas.getHeight() / 2 - (yValues.get(counter) * scale));
+			double yStartValue = Math.round((canvas.getHeight()/2) - (yValues.get(counter) * scale));
 			try {
-				double yEndValue = Math.round(canvas.getHeight() / 2 - (yValues.get(counter + 1) * scale));
+				double yEndValue = Math.round((canvas.getHeight()/2) - (yValues.get(counter + 1) * scale));
 				gc.strokeLine(xValue, yStartValue, xValue + 1, yEndValue);
-//			System.out.println("DRAWN: " + xValue + " " + yValue);
 			} catch (Exception e) {
-				gc.strokeLine(xValue, yStartValue, xValue + 1, yStartValue+1);
+				gc.strokeLine(xValue, yStartValue, xValue + 1, yStartValue);
 			}
 		}
 	}
@@ -543,17 +559,19 @@ public class MainController {
 		return lowest;
 	}
 
-	private void getRawValues(String formula, ArrayList<Double> rawYValues) {
-		for (double xValue = (0 - (canvas.getWidth() / 2)); xValue <= canvas.getWidth() / 2; xValue += 1) {
-			String formulaImpl = formula.replace("x", "(" + (int) xValue + ")");
+	private void calculateRawValues(String formula, ArrayList<Double> destinationArray) {
+		destinationArray.clear();
+		for (double xValue = 0 - (canvas.getWidth() / 2); xValue <= (canvas.getWidth() / 2); xValue += 1) {
+			String formulaImpl = formula.replace("x", "(" + (int) (xValue - panningOffsetX) + ")");
 			Expression expression = new ExpressionBuilder(formulaImpl.split("=")[1]).build();
 
 //			System.out.println("FORMULA: " + formula + " || " + formulaImpl);
-			if (formulaImpl.contains("/0")) { // Could this instead just return the highest possible value?
+			if (formulaImpl.contains("/0")) { // To avoid divide by 0 exceptions 
 				continue;
 			}
 			double result = expression.evaluate();
-			rawYValues.add(result);
+			result -= panningOffsetY;
+			destinationArray.add(result);
 //			System.out.println("(" + xValue + ", " + result + ")");
 		}
 	}
@@ -594,6 +612,8 @@ public class MainController {
 			displayPopup("The formula must contain an equals sign");
 			return false;
 		}
+		
+		
 
 		if (formulaSplit[0].contains("x")) {
 			displayPopup("The lefthand side should not contain X");
@@ -649,10 +669,6 @@ public class MainController {
 				e.printStackTrace(); // Throw popup here?
 			}
 		}
-	}
-
-	public boolean getScaleCurves() {
-		return scaleCurvesCheckBox.isSelected();
 	}
 
 	public void addSqrtToTextField() {
@@ -717,8 +733,7 @@ public class MainController {
 	}
 	
 	private void recalculateYValues(GraphData data) {
-		data.getyValues().clear();
-		getRawValues(data.getFormula().toLowerCase(), data.getyValues());
+		calculateRawValues(data.getFormula().toLowerCase(), data.getyValues());
 	}
 
 	public Stage getStage() {
@@ -766,12 +781,49 @@ public class MainController {
 				redrawLinesOnGraphFromCache();
 			}
 		});
-		scaleCurvesCheckBox.setOnAction(new EventHandler<ActionEvent>() {
-			@Override
-			public void handle(ActionEvent event) {
-				redrawLinesOnGraphFromCache();
-			}
-		});
 	}
+
+	public void panLeft() {
+		if(!getAllowedToPan()) {
+			return;
+		}
+		panningOffsetX += panningXInterval;
+		recalculateAndRedrawLinesFromCache();
+	}
+	
+	public void panRight() {
+		if(!getAllowedToPan()) {
+			return;
+		}
+		panningOffsetX -= panningXInterval;
+		recalculateAndRedrawLinesFromCache();
+	}
+	
+	public void panUp() {
+		if(!getAllowedToPan()) {
+			return;
+		}
+		panningOffsetY += panningYInterval;
+		recalculateAndRedrawLinesFromCache();
+	}
+	
+	public void panDown() {
+		if(!getAllowedToPan()) {
+			return;
+		}
+		panningOffsetY -= panningYInterval;
+		recalculateAndRedrawLinesFromCache();
+	}
+	
+	public void panCentre() {
+		if(!getAllowedToPan()) {
+			return;
+		}
+		panningOffsetY = initialPanningOffsetY;
+		panningOffsetX = initialPanningOffsetX;
+		recalculateAndRedrawLinesFromCache();
+	}
+
+	
 	
 }
