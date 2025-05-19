@@ -158,6 +158,8 @@ public class MainController {
 	
 	int smallButtonMargin = 10;
 	
+	boolean needToRedrawGrid = true;
+	
 	final static String fxmlFileName = "/mainFXML.fxml";
 
 	final String removeRowString = "x";
@@ -319,9 +321,7 @@ public class MainController {
 		gc = canvas.getGraphicsContext2D();
 		gc.setLineWidth(canvasLineWidth);
 		getCanvasBox().getChildren().add(canvas);
-		paintBackground();
-		drawAxes(1);
-		drawBackgroundGrid(1);
+		redrawCanvasFromCacheImpl();
 	}
 
 	private void paintBackground() {
@@ -331,6 +331,7 @@ public class MainController {
 		} else {
 			gc.clearRect(0, 0, canvas.getWidth(), canvas.getHeight());
 		}
+		needToRedrawGrid = true;
 	}
 
 	private void createLine(String formula) throws ScriptException {
@@ -362,14 +363,14 @@ public class MainController {
 
 		if (add) {
 			graphDataPoints.add(data);
-			redrawLinesOnGraphFromCache();
+			redrawCanvasFromCacheImpl();
 		} else {
 			displayErrorPopup("Formula already exists: Y" + formula.toUpperCase());
 		}
 
 	}
 
-	private void redrawLinesOnGraphFromCache() {
+	private void redrawCanvasFromCacheImpl() {
 		gc.clearRect(0, 0, canvas.getWidth(), canvas.getHeight());
 		listOfLinesVBox.getChildren().clear();
 		paintBackground();
@@ -377,15 +378,17 @@ public class MainController {
 		if (getOverlayMultiple()) {
 			for (GraphData data : graphDataPoints) {
 				addLineToUiList(data);
-				drawLineImpl(data.yValues);
+				drawLineImpl(data);
 			}
 		} else {
 			boolean drawn = false;
 			for (GraphData data : graphDataPoints) {
 				addLineToUiList(data);
 				if (!drawn) {
-					drawLineImpl(data.yValues);
-					drawn = true;
+					drawLineImpl(data);
+					if (data.shouldBeDrawn) {
+						drawn = true;
+					}
 				}
 			}
 		}
@@ -393,7 +396,6 @@ public class MainController {
 		if (graphDataPoints.size() == 0 && getDrawAxes()) {
 			drawAxes(1);
 		}
-
 		if (graphDataPoints.size() == 0 && getDrawBackground()) {
 			drawBackgroundGrid(1);
 		}
@@ -429,11 +431,27 @@ public class MainController {
 		HBox.setHgrow(label, Priority.ALWAYS);
 		outerHBox.getChildren().add(label);
 		
+		CheckBox checkBox = new CheckBox();
+		checkBox.setSelected(data.getShouldBeDrawn());
+		outerHBox.getChildren().add(checkBox);
+		
 		outerHBox.setOnMouseClicked(event -> {
 			formulaEntryTF.setText(label.getText().trim());
 			moveCaretToEndOfFormulaBox();
 		});
 
+		checkBox.setOnAction(event -> {
+			// TODO This is not ideal - the relationship between model and view is very fragile 
+			try {
+				GraphData identifiedData = getGraphDataFromFormula(label.getText().trim());
+				identifiedData.setShouldBeDrawn(checkBox.isSelected());
+				redrawCanvasFromCacheImpl();
+			} catch (Exception e) {
+				e.printStackTrace();
+				displayErrorPopup("This shouldn't happen - error setting data to not be drawn");
+			}
+		});
+		
 		deleteButton.setOnAction(event -> {
 			boolean identified = false;
 			for (int counter = 0; counter < graphDataPoints.size(); counter++) {
@@ -454,14 +472,23 @@ public class MainController {
 						((Pane) grandParent).getChildren().remove(parent);
 					}
 				}
-				redrawLinesOnGraphFromCache();
+				redrawCanvasFromCacheImpl();
 				moveCaretToEndOfFormulaBox();
 			}
 		});
 
 	}
 
-	private void drawLineImpl(ArrayList<Double> rawYValues) {
+	private GraphData getGraphDataFromFormula(String trim) {
+		for(GraphData data : graphDataPoints) {
+			if(data.getFormula().equalsIgnoreCase(trim)) {
+				return data;
+			}
+		}
+		return null;
+	}
+
+	private void drawLineImpl(GraphData data) {
 
 		// Optionally: Clear the canvas if only one is to be drawn
 		if (!getOverlayMultiple()) {
@@ -469,7 +496,7 @@ public class MainController {
 		}
 
 		// Optionally: scale the y values to fit canvas
-		double scale = getScalingFactor(rawYValues);
+		double scale = getScalingFactor(data.getyValues());
 
 		// Optionally: Draw background
 		if (getDrawBackground()) {
@@ -482,11 +509,14 @@ public class MainController {
 		}
 
 		// Draw the line
-		drawYValues(rawYValues, scale);
+		drawYValuesImpl(data, scale);
 
 	}
 
 	private void drawBackgroundGrid(double scale) {
+		
+		needToRedrawGrid = false;
+		
 		gc.setStroke(canvasBackgroundGridColour);
 
 		// Draw Horizontal lines
@@ -566,7 +596,7 @@ public class MainController {
 	}
 
 	private boolean getDrawBackground() {
-		return drawBackgroundCheckBox.isSelected();
+		return needToRedrawGrid && drawBackgroundCheckBox.isSelected();
 	}
 
 	private boolean getOverlayMultiple() {
@@ -580,22 +610,26 @@ public class MainController {
 		return formula;
 	}
 
-	private void drawYValues(ArrayList<Double> yValues, double scale) {
+	private void drawYValuesImpl(GraphData data, double scale) {
+		
+		if(!data.getShouldBeDrawn()) {
+			return;
+		}
 
 		Color colour = getNextColour();
 		gc.setStroke(colour);
 
-		for (int counter = 0; counter < yValues.size(); counter++) {
+		for (int counter = 0; counter < data.getyValues().size(); counter++) {
 			double xValue = counter;
 
-			if (Double.isNaN(yValues.get(counter))) {
+			if (Double.isNaN(data.getyValues().get(counter))) {
 				continue;
 			}
 
 			 // try-catch is here as the last point will fail
-			double yStartValue = Math.round((canvas.getHeight()/2) - (yValues.get(counter) * scale));
+			double yStartValue = Math.round((canvas.getHeight()/2) - (data.getyValues().get(counter) * scale));
 			try {
-				double yEndValue = Math.round((canvas.getHeight()/2) - (yValues.get(counter + 1) * scale));
+				double yEndValue = Math.round((canvas.getHeight()/2) - (data.getyValues().get(counter + 1) * scale));
 				gc.strokeLine(xValue, yStartValue, xValue + 1, yEndValue);
 			} catch (Exception e) {
 				gc.strokeLine(xValue, yStartValue, xValue + 1, yStartValue);
@@ -767,7 +801,7 @@ public class MainController {
 		if(newValue <= gridIntervalMaximumValue) {
 			gridInterval = newValue;
 		}
-		redrawLinesOnGraphFromCache();
+		redrawCanvasFromCacheImpl();
 	}
 	
 	public void decreaseBackgroundGridInterval() {
@@ -775,7 +809,7 @@ public class MainController {
 		if(newValue >= gridIntervalMinimumValue) {
 			gridInterval = newValue;
 		}
-		redrawLinesOnGraphFromCache();
+		redrawCanvasFromCacheImpl();
 	}
 
 	public void decreaseCanvasSize() { // Note: atm it assumes width and height are the same
@@ -799,7 +833,7 @@ public class MainController {
 
 	private void recalculateAndRedrawLinesFromCache() {
 		graphDataPoints.forEach(data -> recalculateYValues(data));
-		redrawLinesOnGraphFromCache();
+		redrawCanvasFromCacheImpl();
 	}
 	
 	private void resizeCanvas(double newHeight, double newWidth, int canvasSizeChangeInterval) {
@@ -853,25 +887,25 @@ public class MainController {
 		fillBackgroundCheckBox.setOnAction(new EventHandler<ActionEvent>() {
 			@Override
 			public void handle(ActionEvent event) {
-				redrawLinesOnGraphFromCache();
+				redrawCanvasFromCacheImpl();
 			}
 		});
 		drawBackgroundCheckBox.setOnAction(new EventHandler<ActionEvent>() {
 			@Override
 			public void handle(ActionEvent event) {
-				redrawLinesOnGraphFromCache();
+				redrawCanvasFromCacheImpl();
 			}
 		});
 		drawAxesCheckBox.setOnAction(new EventHandler<ActionEvent>() {
 			@Override
 			public void handle(ActionEvent event) {
-				redrawLinesOnGraphFromCache();
+				redrawCanvasFromCacheImpl();
 			}
 		});
 		overlayMultipleCheckBox.setOnAction(new EventHandler<ActionEvent>() {
 			@Override
 			public void handle(ActionEvent event) {
-				redrawLinesOnGraphFromCache();
+				redrawCanvasFromCacheImpl();
 			}
 		});
 		setAlwaysOnTopCheckBox.setOnAction(new EventHandler<ActionEvent>() {

@@ -37,5 +37,15 @@ public class GraphData {
 	public void setyValues(ArrayList<Double> yValues) {
 		this.yValues = yValues;
 	}
+
+	public boolean getShouldBeDrawn() {
+		return shouldBeDrawn;
+	}
+
+	public void setShouldBeDrawn(boolean shouldBeDrawn) {
+		this.shouldBeDrawn = shouldBeDrawn;
+	}
+	
+	
 	
 }
