@@ -5,6 +5,8 @@ The user can enter a formula in the text box, and press the button to add it to 
 
 The user can click and drag on the canvas to pan around. The program will automatically recalculate and redraw the axes, the background, and all curves.
 
+By pressing "Save Screenshot", the user can save the canvas as a PNG to their computer.
+
 Hovering over any element on the left will display a tooltip to explain what things do and what can be done.
 
 ![My Image](data-display-demo/src/main/resources/gitHubImage.png)
