@@ -1,5 +1,5 @@
 # GraphEasy - JavaFX App
-GraphEasy is a Simple, educational tool for visualising formulas on a graph. It is written using Java and JavaFX (and currently unfinished).
+GraphEasy is an easy to use, educational tool for visualising formulas on a graph. It is written using Java and JavaFX (and currently unfinished).
 
 The user can enter a formula in the text box, and press the button to add it to the canvas. There are controls below the textbox for adding special characters, toggles for various UI elements, and so on.
 
