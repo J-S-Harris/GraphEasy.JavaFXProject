@@ -25,6 +25,7 @@ import javafx.scene.control.CheckBox;
 import javafx.scene.control.Label;
 import javafx.scene.control.ScrollPane;
 import javafx.scene.control.TextField;
+import javafx.scene.control.TitledPane;
 import javafx.scene.control.Tooltip;
 import javafx.scene.image.Image;
 import javafx.scene.image.WritableImage;
@@ -124,6 +125,9 @@ public class MainController {
 	CheckBox fillBackgroundCheckBox;
 	@FXML
 	CheckBox setAlwaysOnTopCheckBox;
+	@FXML
+	TitledPane drawingPropertiesTitledPane, preferencesTitledPane, canvasPropertiesTitledPane, panningTitledPane;
+	
 
 	int canvasSizeChangeInterval = 100;
 	int canvasMinimumSize = 400;
@@ -158,7 +162,7 @@ public class MainController {
 	final String removeRowString = "x";
 	final String formulaBoxStartingText = "y=";
 
-	final String pressEnterOnFormulaTooltip = "Type in a formula, then press enter or press \"Go!\"";
+	final String pressEnterOnFormulaTooltip = "Type in a formula, then press enter or press \"Draw Curve\"";
 	final String goButtonTooltip = "Add the curve to the graph";
 	final String snapshotTooltip = "Save the current canvas to your computer as an image";
 	final String listUiTooltip = "Click to add this formula to the text box";
@@ -197,6 +201,8 @@ public class MainController {
 		setSmallButtonProperties();
 		addTooltips();
 		setCanvasListeners();
+		setMarginToTitlePaneContents();
+		closeTitlePanes();
 
 		// non-specific vvv
 		
@@ -210,7 +216,7 @@ public class MainController {
 		
 //		VBox.setVgrow(listOfLineScrollPane, Priority.ALWAYS);
 
-		VBox.setMargin(panCentreButton, new Insets(5, 0, 5, 0));
+		VBox.setMargin(panCentreButton, new Insets(0, 0, 5, 0));
 		
 		formulaEntryTF.setText(formulaBoxStartingText);
 		Platform.runLater(() -> {
@@ -227,6 +233,22 @@ public class MainController {
 		formulaEntryTF.setOnAction(event -> {
 			setCurveToCanvas();
 		});
+
+	}
+
+	private void closeTitlePanes() {
+
+		panningTitledPane.setExpanded(false);
+		canvasPropertiesTitledPane.setExpanded(false);
+		drawingPropertiesTitledPane.setExpanded(false);
+		preferencesTitledPane.setExpanded(false);
+		
+	}
+
+	private void setMarginToTitlePaneContents() {
+
+		setSmallMarginToInternalComponents(drawingPropertiesTitledPane);
+		setSmallMarginToInternalComponents(preferencesTitledPane);
 
 	}
 
@@ -283,7 +305,7 @@ public class MainController {
 		canvas.setHeight(AppClass.defaultStageHeight);
 		canvas.setWidth(AppClass.defaultStageWidth);
 
-		int canvasMargin = 5;
+		int canvasMargin = 2;
 		HBox.setMargin(canvasBox, new Insets(canvasMargin, canvasMargin, canvasMargin, canvasMargin));
 		canvasBox.setPrefWidth(Region.USE_COMPUTED_SIZE);
 		canvasBox.setPrefHeight(Region.USE_COMPUTED_SIZE);
@@ -921,6 +943,16 @@ public class MainController {
 
 	private boolean getPinnedToFront() {
 		return setAlwaysOnTopCheckBox.isSelected();
+	}
+
+	private void setSmallMarginToInternalComponents(TitledPane pane) {
+		Insets insets = new Insets(4,0,0,0);
+		if(pane.getContent() instanceof VBox) {
+			((VBox)pane.getContent()).getChildren().forEach(x -> VBox.setMargin(x, insets));
+		}
+		if(pane.getContent() instanceof HBox) {
+			((HBox)pane.getContent()).getChildren().forEach(x -> HBox.setMargin(x, insets));
+		}
 	}
 	
 }

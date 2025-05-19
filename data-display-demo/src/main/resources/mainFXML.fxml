@@ -7,132 +7,153 @@
 <?import javafx.scene.control.Label?>
 <?import javafx.scene.control.Separator?>
 <?import javafx.scene.control.ScrollPane?>
+<?import javafx.scene.control.Accordion?>
+<?import javafx.scene.control.TitledPane?>
 
-<HBox fx:id="main" xmlns="http://javafx.com/javafx/17" xmlns:fx="http://javafx.com/fxml/1" fx:controller="mainClasses.MainController">
+<HBox fx:id="main" xmlns="http://javafx.com/javafx/17"
+	xmlns:fx="http://javafx.com/fxml/1"
+	fx:controller="mainClasses.MainController">
 
-	<ScrollPane fx:id="leftPanelScrollPane" >
+	<ScrollPane fx:id="leftPanelScrollPane">
 
-	<VBox fx:id="leftPanelVBox">
+		<VBox fx:id="leftPanelVBox">
 
-		<VBox fx:id="topButtonsRow">
-			<children>
-				<Label text="Enter a formula" />
-				<TextField fx:id="formulaEntryTF" />
-				<Button fx:id="confirmButton" text="Go!" onAction="#setCurveToCanvas" />
-			</children>
-		</VBox>
-
-		<VBox fx:id="specialCharacterInputRow">
-			<Label fx:id="specialCharsLabel" text="Special Characters" />
-			<HBox fx:id="specialCharsButtonHBox">
-				<Button fx:id="squareButton" text="X^y"
-					onAction="#addSquareToTextField" />
-				<Button fx:id="sqrtButton" text="√"
-					onAction="#addSqrtToTextField" />
-			</HBox>
-		</VBox>
-
-		<Separator maxHeight="1" />
-		
-		<Button fx:id="snapshotButton" text="Save Screenshot" onAction="#saveSnapshot" />
-		
-		<Separator maxHeight="1" />
-		
-		<VBox fx:id="panningInputRow">
-			<Label fx:id="panningLabel" text="Panning (Click and drag)" />
-			<Button fx:id="panCentreButton" text="Centre on (0,0)"
-				onAction="#panCentre" />
-			<HBox fx:id="lockPanningHBox" >
+			<VBox fx:id="topButtonsRow">
 				<children>
-					<CheckBox fx:id="lockPanningCheckBox" />
-					<Label fx:id="lockPanningLabel" text=" Lock Panning" />
+					<Label text="Enter a formula" />
+					<TextField fx:id="formulaEntryTF" />
+					<Button fx:id="confirmButton" text="Draw Curve"
+						onAction="#setCurveToCanvas" />
 				</children>
-			</HBox>
-		</VBox>
+			</VBox>
 
-		<Separator maxHeight="1" />
-
-		<VBox fx:id="intervalSizeAdjustmentRow">
-			<children>
-				<Label fx:id="intervalSizeLabel" text="Grid Size" />
-				<HBox>
-				<Button fx:id="decreaseIntervalButton" text="-"
-					onAction="#decreaseBackgroundGridInterval" />
-				<Button fx:id="increaseIntervalButton" text="+"
-					onAction="#increaseBackgroundGridInterval" />
+			<VBox fx:id="specialCharacterInputRow">
+				<Label fx:id="specialCharsLabel" text="Special Characters" />
+				<HBox fx:id="specialCharsButtonHBox">
+					<Button fx:id="squareButton" text="X^y"
+						onAction="#addSquareToTextField" />
+					<Button fx:id="sqrtButton" text="√"
+						onAction="#addSqrtToTextField" />
 				</HBox>
-			</children>
+			</VBox>
+
+			<Separator maxHeight="1" />
+
+			<!-- <TitledPane text="Screenshot"> -->
+			<VBox>
+				<Button fx:id="snapshotButton" text="Save Screenshot"
+					onAction="#saveSnapshot" />
+			</VBox>
+			<!-- </TitledPane> -->
+
+			<Separator maxHeight="1" />
+
+			<TitledPane fx:id="panningTitledPane" text="Panning (Click and drag)">
+				<VBox fx:id="panningInputRow">
+					<Button fx:id="panCentreButton" text="Centre on (0,0)"
+						onAction="#panCentre" />
+					<HBox fx:id="lockPanningHBox">
+						<children>
+							<CheckBox fx:id="lockPanningCheckBox" />
+							<Label fx:id="lockPanningLabel" text=" Lock Panning" />
+						</children>
+					</HBox>
+				</VBox>
+			</TitledPane>
+
+			<!-- <Separator maxHeight="1" /> -->
+
+			<TitledPane fx:id="canvasPropertiesTitledPane" text="Canvas Properties">
+				<VBox>
+
+					<VBox fx:id="canvasSizeAdjustmentRow">
+						<children>
+							<Label fx:id="canvasSizeLabel" text="Canvas Size" />
+							<HBox>
+								<Button fx:id="decreasecanvasSizeButton" text="-"
+									onAction="#decreaseCanvasSize" />
+								<Button fx:id="increasecanvasSizeButton" text="+"
+									onAction="#increaseCanvasSize" />
+							</HBox>
+						</children>
+					</VBox>
+
+					<VBox fx:id="intervalSizeAdjustmentRow">
+						<children>
+							<Label fx:id="intervalSizeLabel" text="Grid Size" />
+							<HBox>
+								<Button fx:id="decreaseIntervalButton" text="-"
+									onAction="#decreaseBackgroundGridInterval" />
+								<Button fx:id="increaseIntervalButton" text="+"
+									onAction="#increaseBackgroundGridInterval" />
+							</HBox>
+						</children>
+					</VBox>
+
+					<!-- <VBox fx:id="zoomAdjustmentRow"> <children> <Label fx:id="zoomLabel" 
+						text="Zoom" /> <HBox> <Button fx:id="zoomOutButton" text="-" onAction="#zoomOut" 
+						/> <Button fx:id="zoomInButton" text="+" onAction="#zoomIn" /> </HBox> </children> 
+						</VBox> -->
+
+				</VBox>
+			</TitledPane>
+
+			<TitledPane fx:id="drawingPropertiesTitledPane"
+				text="Drawing Properties">
+				<VBox>
+
+					<HBox fx:id="fillBackgroundRow">
+						<children>
+							<CheckBox fx:id="fillBackgroundCheckBox" />
+							<Label fx:id="fillBackgroundLabel" text=" Paint Background" />
+						</children>
+					</HBox>
+
+					<HBox fx:id="drawBackgroundRow">
+						<children>
+							<CheckBox fx:id="drawBackgroundCheckBox" />
+							<Label fx:id="drawBackgroundLabel" text=" Draw Grid" />
+						</children>
+					</HBox>
+
+					<HBox fx:id="drawAxesRow">
+						<children>
+							<CheckBox fx:id="drawAxesCheckBox" />
+							<Label fx:id="drawAxesLabel" text=" Draw Axes" />
+						</children>
+					</HBox>
+
+					<HBox fx:id="overlayMultipleRow">
+						<children>
+							<CheckBox fx:id="overlayMultipleCheckBox" />
+							<Label fx:id="overlayMultipleLabel"
+								text=" Overlay Multiple" />
+						</children>
+					</HBox>
+
+				</VBox>
+			</TitledPane>
+
+			<TitledPane fx:id="preferencesTitledPane"
+				text="Preferences and Settings">
+				<VBox>
+					<HBox fx:id="setAlwaysOnTopRow">
+						<children>
+							<CheckBox fx:id="setAlwaysOnTopCheckBox" />
+							<Label fx:id="setAlwaysOnTopLabel"
+								text=" Pin Window to Front" />
+						</children>
+					</HBox>
+				</VBox>
+
+			</TitledPane>
+
+			<Separator maxHeight="1" />
+
+			<VBox fx:id="listOfLinesVBox" />
+
 		</VBox>
 
-		<VBox fx:id="canvasSizeAdjustmentRow">
-			<children>
-				<Label fx:id="canvasSizeLabel" text="Canvas Size" />
-				<HBox>
-				<Button fx:id="decreasecanvasSizeButton" text="-"
-					onAction="#decreaseCanvasSize" />
-				<Button fx:id="increasecanvasSizeButton" text="+"
-					onAction="#increaseCanvasSize" />
-				</HBox>
-			</children>
-		</VBox>
-		
-		<!-- 
-		<VBox fx:id="zoomAdjustmentRow">
-			<children>
-				<Label fx:id="zoomLabel" text="Zoom" />
-				<HBox>
-				<Button fx:id="zoomOutButton" text="-"
-					onAction="#zoomOut" />
-				<Button fx:id="zoomInButton" text="+"
-					onAction="#zoomIn" />
-				</HBox>
-			</children>
-		</VBox>
-		 -->
-		
-		<Separator maxHeight="1" />
-
-		<HBox fx:id="fillBackgroundRow">
-			<children>
-				<CheckBox fx:id="fillBackgroundCheckBox" />
-				<Label fx:id="fillBackgroundLabel" text=" Paint Background" />
-			</children>
-		</HBox>
-
-		<HBox fx:id="drawBackgroundRow">
-			<children>
-				<CheckBox fx:id="drawBackgroundCheckBox" />
-				<Label fx:id="drawBackgroundLabel" text=" Draw Grid" />
-			</children>
-		</HBox>
-
-		<HBox fx:id="drawAxesRow">
-			<children>
-				<CheckBox fx:id="drawAxesCheckBox" />
-				<Label fx:id="drawAxesLabel" text=" Draw Axes" />
-			</children>
-		</HBox>
-
-		<HBox fx:id="overlayMultipleRow">
-			<children>
-				<CheckBox fx:id="overlayMultipleCheckBox" />
-				<Label fx:id="overlayMultipleLabel" text=" Overlay Multiple" />
-			</children>
-		</HBox>
-
-		<HBox fx:id="setAlwaysOnTopRow">
-			<children>
-				<CheckBox fx:id="setAlwaysOnTopCheckBox" />
-				<Label fx:id="setAlwaysOnTopLabel" text=" Pin Window to Front" />
-			</children>
-		</HBox>
-
-		<Separator maxHeight="1" />
-
-		<VBox fx:id="listOfLinesVBox" />
-
-	</VBox>
-	
 	</ScrollPane>
 
 	<VBox fx:id="canvasBox" />
