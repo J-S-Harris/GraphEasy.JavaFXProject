@@ -14,6 +14,7 @@ import javafx.event.ActionEvent;
 import javafx.event.EventHandler;
 import javafx.fxml.FXML;
 import javafx.geometry.Insets;
+import javafx.scene.Node;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.canvas.Canvas;
@@ -193,16 +194,14 @@ public class MainController {
 	public void prepareUI() {
 		selectDefaultCheckBoxes();
 		createDefaultCanvas();
-		getCanvasBox().getChildren().add(canvas);
-		drawAxes(1);
-		drawBackgroundGrid(1);
 		addTooltips();
-		setCheckBoxEventHandlers();
+		setEventHandlers();
 		setSmallButtonProperties();
 		addTooltips();
 		setCanvasListeners();
-		setMarginToTitlePaneContents();
-		closeTitlePanes();
+		setMarginsToLeftPanelNodes();
+		formatTitlePanesAndContents();
+		closeTitlePanesOnStartup();
 
 		// non-specific vvv
 		
@@ -226,27 +225,33 @@ public class MainController {
 		confirmButton.setMaxWidth(Double.MAX_VALUE);
 		snapshotButton.setMaxWidth(Double.MAX_VALUE);
 
-		int margin = 6;
-		
-		leftPanelVBox.getChildren().forEach(x -> VBox.setMargin(x, new Insets(margin, 0, margin, margin)));
-
-		formulaEntryTF.setOnAction(event -> {
-			setCurveToCanvas();
-		});
-
 	}
 
-	private void closeTitlePanes() {
-
-		panningTitledPane.setExpanded(false);
-		canvasPropertiesTitledPane.setExpanded(false);
-		drawingPropertiesTitledPane.setExpanded(false);
-		preferencesTitledPane.setExpanded(false);
+	private void setMarginsToLeftPanelNodes() {
+		Insets defaultInsets = new Insets(6, 0, 6, 6);
+		Insets titledPaneInsets = new Insets(4, 0, 0, 0);
 		
+		for(Node node : leftPanelVBox.getChildren()) {
+			if(node instanceof TitledPane) {
+				VBox.setMargin((TitledPane)node, titledPaneInsets);
+			} else {
+				VBox.setMargin(node, defaultInsets);
+			}
+		}
 	}
 
-	private void setMarginToTitlePaneContents() {
+	private void closeTitlePanesOnStartup() {
+		// in future I might want to leave one open
+		closeAllTitledPanes();
+	}
 
+	private void formatTitlePanesAndContents() {
+
+		drawingPropertiesTitledPane.setAnimated(false);
+		preferencesTitledPane.setAnimated(false);
+		canvasPropertiesTitledPane.setAnimated(false);
+		panningTitledPane.setAnimated(false);
+		
 		setSmallMarginToInternalComponents(drawingPropertiesTitledPane);
 		setSmallMarginToInternalComponents(preferencesTitledPane);
 
@@ -313,7 +318,10 @@ public class MainController {
 
 		gc = canvas.getGraphicsContext2D();
 		gc.setLineWidth(canvasLineWidth);
+		getCanvasBox().getChildren().add(canvas);
 		paintBackground();
+		drawAxes(1);
+		drawBackgroundGrid(1);
 	}
 
 	private void paintBackground() {
@@ -836,7 +844,12 @@ public class MainController {
 //		HBox.setMargin(zoomOutButton, insets);		
 	}
 
-	private void setCheckBoxEventHandlers() {
+	private void setEventHandlers() {
+		
+		formulaEntryTF.setOnAction(event -> {
+			setCurveToCanvas();
+		});
+		
 		fillBackgroundCheckBox.setOnAction(new EventHandler<ActionEvent>() {
 			@Override
 			public void handle(ActionEvent event) {
@@ -954,5 +967,21 @@ public class MainController {
 			((HBox)pane.getContent()).getChildren().forEach(x -> HBox.setMargin(x, insets));
 		}
 	}
+
+	public void openAllTitledPanes() {
+		for (Node node : leftPanelVBox.getChildren()) {
+			if (node instanceof TitledPane) {
+				((TitledPane) node).setExpanded(true);
+			}
+		}
+	}
 	
+	public void closeAllTitledPanes() {
+		for (Node node : leftPanelVBox.getChildren()) {
+			if (node instanceof TitledPane) {
+				((TitledPane) node).setExpanded(false);
+			}
+		}
+	}
+
 }

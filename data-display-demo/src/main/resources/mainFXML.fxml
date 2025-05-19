@@ -47,6 +47,15 @@
 			<!-- </TitledPane> -->
 
 			<Separator maxHeight="1" />
+			
+			<!-- 
+<HBox spacing="10">
+    <Button fx:id="openAllTitledPanes" text="Open All" onAction="#openAllTitledPanes"
+            maxWidth="Infinity" HBox.hgrow="ALWAYS"/>
+    <Button fx:id="closeAllTitledPanes" text="Close All" onAction="#closeAllTitledPanes"
+            maxWidth="Infinity" HBox.hgrow="ALWAYS"/>
+</HBox>
+ -->
 
 			<TitledPane fx:id="panningTitledPane" text="Panning (Click and drag)">
 				<VBox fx:id="panningInputRow">
@@ -135,7 +144,7 @@
 			</TitledPane>
 
 			<TitledPane fx:id="preferencesTitledPane"
-				text="Preferences and Settings">
+				text="Preferences">
 				<VBox>
 					<HBox fx:id="setAlwaysOnTopRow">
 						<children>
