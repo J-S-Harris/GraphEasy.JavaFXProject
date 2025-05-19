@@ -1,11 +1,16 @@
 package mainClasses;
 
+import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
 
+import javax.imageio.ImageIO;
 import javax.script.ScriptException;
+import javax.swing.filechooser.FileNameExtensionFilter;
 
 import easterEggs.EasterEggMethods;
 import javafx.application.Platform;
+import javafx.embed.swing.SwingFXUtils;
 import javafx.event.ActionEvent;
 import javafx.event.EventHandler;
 import javafx.fxml.FXML;
@@ -23,6 +28,7 @@ import javafx.scene.control.ScrollPane;
 import javafx.scene.control.TextField;
 import javafx.scene.control.Tooltip;
 import javafx.scene.image.Image;
+import javafx.scene.image.WritableImage;
 import javafx.scene.layout.Background;
 import javafx.scene.layout.BackgroundFill;
 import javafx.scene.layout.CornerRadii;
@@ -32,6 +38,7 @@ import javafx.scene.layout.Priority;
 import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
+import javafx.stage.FileChooser;
 import javafx.stage.Stage;
 import net.objecthunter.exp4j.Expression;
 import net.objecthunter.exp4j.ExpressionBuilder;
@@ -43,6 +50,7 @@ public class MainController {
 	// Make the GraphData remember its colour, so that deleting earlier lines
 		// doesn't change the colour
 	// Give user checkbox to de/select from list. Only display selected
+		// This can be stored in GraphData, and referenced from there
 	// Allow user to import/export data
 	// Unit tests
 
@@ -80,6 +88,8 @@ public class MainController {
 	ScrollPane listOfLineScrollPane, leftPanelScrollPane;
 	@FXML
 	Button confirmButton;
+	@FXML
+	Button snapshotButton;
 	@FXML
 	Button squareButton;
 	@FXML
@@ -142,6 +152,7 @@ public class MainController {
 
 	final String pressEnterOnFormulaTooltip = "Type in a formula, then press enter or press \"Go!\"";
 	final String goButtonTooltip = "Add the curve to the graph";
+	final String snapshotTooltip = "Save the current canvas to your computer as an image";
 	final String listUiTooltip = "Click to add this formula to the text box";
 	final String canvasTooltip = "Click and drag to pan. Double click to centre on (0,0)";
 	
@@ -198,8 +209,8 @@ public class MainController {
 			moveCaretToEndOfFormulaBox();
 		});
 
-		HBox.setHgrow(confirmButton, Priority.ALWAYS);
-		confirmButton.setMaxWidth(Double.MAX_VALUE); // Ensures full width
+		confirmButton.setMaxWidth(Double.MAX_VALUE);
+		snapshotButton.setMaxWidth(Double.MAX_VALUE);
 
 		int margin = 6;
 		
@@ -240,6 +251,7 @@ public class MainController {
 	private void addTooltips() {
 		Tooltip.install(formulaEntryTF, new Tooltip(pressEnterOnFormulaTooltip));
 		Tooltip.install(confirmButton, new Tooltip(goButtonTooltip));
+		Tooltip.install(snapshotButton, new Tooltip(snapshotTooltip));
 		Tooltip.install(squareButton, new Tooltip(squareTooltip));
 		Tooltip.install(sqrtButton, new Tooltip(squareRootTooltip));
 		Tooltip.install(drawBackgroundLabel, new Tooltip(drawBackgroundTooltip));
@@ -306,7 +318,7 @@ public class MainController {
 			graphDataPoints.add(data);
 			redrawLinesOnGraphFromCache();
 		} else {
-			displayPopup("Formula already exists: Y" + formula.toUpperCase());
+			displayErrorPopup("Formula already exists: Y" + formula.toUpperCase());
 		}
 
 	}
@@ -615,24 +627,24 @@ public class MainController {
 //		}
 
 		if (!formula.contains("=")) {
-			displayPopup("The formula must contain an equals sign");
+			displayErrorPopup("The formula must contain an equals sign");
 			return false;
 		}
 		
 		
 
 		if (formulaSplit[0].contains("x")) {
-			displayPopup("The lefthand side should not contain X");
+			displayErrorPopup("The lefthand side should not contain X");
 			return false;
 		}
 
 		if (formulaSplit[1].contains("y")) {
-			displayPopup("The righthand side should not contain Y");
+			displayErrorPopup("The righthand side should not contain Y");
 			return false;
 		}
 
 		if (formulaSplit.length != 2) {
-			displayPopup("The formula must contain exactly one equals sign");
+			displayErrorPopup("The formula must contain exactly one equals sign");
 			return false;
 		}
 
@@ -642,16 +654,23 @@ public class MainController {
 //		}
 
 		if (!formulaSplit[0].contains("y")) {
-			displayPopup("The formula must have Y on the left");
+			displayErrorPopup("The formula must have Y on the left");
 			return false;
 		}
 
 		return true;
 	}
 
-	public static void displayPopup(String text) {
+	public static void displayErrorPopup(String text) {
 		Alert alert = new Alert(AlertType.INFORMATION);
 		alert.setTitle("There Was a Problem");
+		alert.setContentText(text);
+		alert.showAndWait();
+	}
+	
+	public static void displayInfoPopup(String text) {
+		Alert alert = new Alert(AlertType.INFORMATION);
+		alert.setTitle("Information");
 		alert.setContentText(text);
 		alert.showAndWait();
 	}
@@ -850,5 +869,20 @@ public class MainController {
 		// TODO Actually do the zoom here
 		recalculateAndRedrawLinesFromCache();
 	}
+
+	public void saveSnapshot() {
+		    WritableImage image = new WritableImage((int) canvas.getWidth(), (int) canvas.getHeight());
+		    canvas.snapshot(null, image);
+		    FileChooser fileChooser = new FileChooser();
+		    fileChooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("PNG Image", "*.png"));
+		    File file = fileChooser.showSaveDialog(stage);
+		    try {
+		        ImageIO.write(SwingFXUtils.fromFXImage(image, null), "png", file);
+		        displayInfoPopup("Image saved to:\n" + file.getAbsolutePath());
+		    } catch (IOException e) {
+		        e.printStackTrace();
+		        displayErrorPopup("Something went wrong saving the image to:\n" + file.getAbsolutePath());
+		    }
+		}
 	
 }

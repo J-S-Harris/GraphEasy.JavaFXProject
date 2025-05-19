@@ -18,8 +18,7 @@
 			<children>
 				<Label text="Enter a formula" />
 				<TextField fx:id="formulaEntryTF" />
-				<Button fx:id="confirmButton" text="Go!"
-					onAction="#setCurveToCanvas" />
+				<Button fx:id="confirmButton" text="Go!" onAction="#setCurveToCanvas" />
 			</children>
 		</VBox>
 
@@ -33,6 +32,10 @@
 			</HBox>
 		</VBox>
 
+		<Separator maxHeight="1" />
+		
+		<Button fx:id="snapshotButton" text="Save Screenshot" onAction="#saveSnapshot" />
+		
 		<Separator maxHeight="1" />
 		
 		<VBox fx:id="panningInputRow">
