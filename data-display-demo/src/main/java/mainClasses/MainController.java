@@ -116,6 +116,8 @@ public class MainController {
 	HBox specialCharsButtonHBox;
 	@FXML
 	VBox zoomAdjustmentRow;
+	@FXML
+	CheckBox fillBackgroundCheckBox;
 
 	int canvasSizeChangeInterval = 100;
 	int canvasMinimumSize = 400;
@@ -179,9 +181,9 @@ public class MainController {
 	}
 
 	public void prepareUI() {
+		selectDefaultCheckBoxes();
 		createDefaultCanvas();
 		getCanvasBox().getChildren().add(canvas);
-		overlayMultipleCheckBox.setSelected(true);
 		drawAxes(1);
 		drawBackgroundGrid(1);
 		addTooltips();
@@ -220,9 +222,13 @@ public class MainController {
 			setCurveToCanvas();
 		});
 
+	}
+
+	private void selectDefaultCheckBoxes() {
+		fillBackgroundCheckBox.setSelected(true);
+		overlayMultipleCheckBox.setSelected(true);
 		drawBackgroundCheckBox.setSelected(true);
 		drawAxesCheckBox.setSelected(true);
-
 	}
 
 	private void setCanvasListeners() {
@@ -283,8 +289,12 @@ public class MainController {
 	}
 
 	private void paintBackground() {
-		gc.setFill(canvasBackgroundColour);
-		gc.fillRect(0, 0, canvas.getWidth(), canvas.getHeight());
+		if(getFillBackgroundCheckBoxSelected()) {
+			gc.setFill(canvasBackgroundColour);
+			gc.fillRect(0, 0, canvas.getWidth(), canvas.getHeight());
+		} else {
+			gc.clearRect(0, 0, canvas.getWidth(), canvas.getHeight());
+		}
 	}
 
 	private void createLine(String formula) throws ScriptException {
@@ -480,6 +490,10 @@ public class MainController {
 	
 	private boolean getLockPanningCheckBoxSelected() {
 		return lockPanningCheckBox.isSelected();
+	}
+	
+	private boolean getFillBackgroundCheckBoxSelected() {
+		return fillBackgroundCheckBox.isSelected();
 	}
 
 	private String tidyAndCorrectFormula(String formula) {
@@ -795,6 +809,12 @@ public class MainController {
 	}
 
 	private void setCheckBoxEventHandlers() {
+		fillBackgroundCheckBox.setOnAction(new EventHandler<ActionEvent>() {
+			@Override
+			public void handle(ActionEvent event) {
+				redrawLinesOnGraphFromCache();
+			}
+		});
 		drawBackgroundCheckBox.setOnAction(new EventHandler<ActionEvent>() {
 			@Override
 			public void handle(ActionEvent event) {

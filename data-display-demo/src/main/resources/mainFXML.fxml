@@ -92,6 +92,13 @@
 		
 		<Separator maxHeight="1" />
 
+		<HBox fx:id="fillBackgroundRow">
+			<children>
+				<CheckBox fx:id="fillBackgroundCheckBox" />
+				<Label fx:id="fillBackgroundLabel" text=" Paint Background" />
+			</children>
+		</HBox>
+
 		<HBox fx:id="drawBackgroundRow">
 			<children>
 				<CheckBox fx:id="drawBackgroundCheckBox" />
