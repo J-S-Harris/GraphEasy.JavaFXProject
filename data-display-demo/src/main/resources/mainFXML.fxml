@@ -120,11 +120,16 @@
 			</children>
 		</HBox>
 
+		<HBox fx:id="setAlwaysOnTopRow">
+			<children>
+				<CheckBox fx:id="setAlwaysOnTopCheckBox" />
+				<Label fx:id="setAlwaysOnTopLabel" text=" Pin Window to Front" />
+			</children>
+		</HBox>
+
 		<Separator maxHeight="1" />
 
-	<!-- 	<ScrollPane fx:id="listOfLineScrollPane" fitToWidth="true">  -->
-			<VBox fx:id="listOfLinesVBox" />
-	<!-- 	</ScrollPane>  -->
+		<VBox fx:id="listOfLinesVBox" />
 
 	</VBox>
 	

@@ -6,7 +6,6 @@ import java.util.ArrayList;
 
 import javax.imageio.ImageIO;
 import javax.script.ScriptException;
-import javax.swing.filechooser.FileNameExtensionFilter;
 
 import easterEggs.EasterEggMethods;
 import javafx.application.Platform;
@@ -46,13 +45,18 @@ import net.objecthunter.exp4j.ExpressionBuilder;
 public class MainController {
 
 	// TODO Possible next TODOs
+	// Export this to an exe
+	// Unit tests
+	// Add numbered ticks to the axes
+	// Put lefthand controls into collapsable accordions
+	// Add an option to display the formulas next to each curve?
+	// Add buttons on the graph to pan in tidy/discrete units up/down/L/R?
 	// Make the zoom work; the buttons are disabled in the FXML
 	// Make the GraphData remember its colour, so that deleting earlier lines
 		// doesn't change the colour
+		// Also, generally: Tighten up/expand the usage of the GraphData objects
 	// Give user checkbox to de/select from list. Only display selected
 		// This can be stored in GraphData, and referenced from there
-	// Allow user to import/export data
-	// Unit tests
 
 	private final static String appTitle = "GraphEasy";
 	public final static String appIconFileName = "linechart.png";
@@ -118,6 +122,8 @@ public class MainController {
 	VBox zoomAdjustmentRow;
 	@FXML
 	CheckBox fillBackgroundCheckBox;
+	@FXML
+	CheckBox setAlwaysOnTopCheckBox;
 
 	int canvasSizeChangeInterval = 100;
 	int canvasMinimumSize = 400;
@@ -833,6 +839,14 @@ public class MainController {
 				redrawLinesOnGraphFromCache();
 			}
 		});
+		setAlwaysOnTopCheckBox.setOnAction(new EventHandler<ActionEvent>() {
+
+			@Override
+			public void handle(ActionEvent event) {
+				stage.setAlwaysOnTop(getPinnedToFront());
+			}
+			
+		});
 	}
 
 	public void panLeft() {
@@ -904,5 +918,9 @@ public class MainController {
 		        displayErrorPopup("Something went wrong saving the image to:\n" + file.getAbsolutePath());
 		    }
 		}
+
+	private boolean getPinnedToFront() {
+		return setAlwaysOnTopCheckBox.isSelected();
+	}
 	
 }
