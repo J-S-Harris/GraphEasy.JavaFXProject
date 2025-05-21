@@ -90,6 +90,8 @@ public class MainController {
 	@FXML
 	CheckBox drawAxesCheckBox;
 	@FXML
+	CheckBox drawAxisTicksCheckBox;
+	@FXML
 	CheckBox drawBackgroundCheckBox;
 	@FXML
 	VBox leftPanelVBox;
@@ -136,7 +138,7 @@ public class MainController {
 	@FXML
 	Button helpButton;
 	@FXML
-	Label setAlwaysOnTopLabel, fillBackgroundLabel, lockPanningLabel;
+	Label setAlwaysOnTopLabel, fillBackgroundLabel, lockPanningLabel, drawAxisTicksLabel;
 	
 	int leftPanelWidth = 200;
 	int canvasSizeChangeInterval = 100;
@@ -150,6 +152,10 @@ public class MainController {
 	double mouseX = 0;
 	double mouseY = 0;
 	
+	double axisTickHeight = 5;
+	double axisTickWidth = 5;
+	double axisTickInterval = 50;
+	
 	private final int defaultCanvasWidth = 800;
 	private final int defaultCanvasHeight = 600;
 	
@@ -157,6 +163,7 @@ public class MainController {
 	
 	Color canvasBackgroundColour = Color.BEIGE;
 	Color canvasAxisColour = Color.BLACK;
+	Color canvasAxisTickColour = Color.BLACK;
 	Color rightClickPointsColour = Color.RED;
 	Color canvasBackgroundGridColour = new Color(0.5, 0.5, 0.5, 0.5); // Grey
 	Color[] lineColours = { Color.LIGHTGREEN, Color.ORANGE, Color.BLUEVIOLET, Color.CHARTREUSE, //
@@ -207,6 +214,7 @@ public class MainController {
 	final String squareRootTooltip = "Square root a number";
 	final String drawBackgroundTooltip = "Draw the background grid";
 	final String drawAxesTooltip = "Draw the X and Y axes";
+	final String drawAxisTicksTooltip = "Draw ticks on the axes";
 	final String overlayMultipleTooltip = "Allow multiple curves to be drawn";
 	final String helpButtonTooltip = "Display help";
 	final String alwaysOnTopTooltip = "Pin this window to the front of the screen";
@@ -321,6 +329,7 @@ public class MainController {
 		overlayMultipleCheckBox.setSelected(true);
 		drawBackgroundCheckBox.setSelected(true);
 		drawAxesCheckBox.setSelected(true);
+		drawAxisTicksCheckBox.setSelected(true);
 	}
 
 	private void setCanvasListeners() {
@@ -411,6 +420,12 @@ public class MainController {
 	}
 
 	private void addTooltips() {
+		
+		Tooltip.install(drawingPropertiesTitledPane, new Tooltip(drawingPropertiesTooltip));
+		Tooltip.install(preferencesTitledPane, new Tooltip(preferencesTooltip));
+		Tooltip.install(canvasPropertiesTitledPane, new Tooltip(canvasPropertiesTooltip));
+		Tooltip.install(panningTitledPane, new Tooltip(panningTitledTooltip));
+		
 		Tooltip.install(formulaEntryTF, new Tooltip(pressEnterOnFormulaTooltip));
 		Tooltip.install(confirmButton, new Tooltip(goButtonTooltip));
 		Tooltip.install(snapshotButton, new Tooltip(snapshotTooltip));
@@ -418,6 +433,7 @@ public class MainController {
 		Tooltip.install(sqrtButton, new Tooltip(squareRootTooltip));
 		Tooltip.install(drawBackgroundLabel, new Tooltip(drawBackgroundTooltip));
 		Tooltip.install(drawAxesLabel, new Tooltip(drawAxesTooltip));
+		Tooltip.install(drawAxisTicksLabel, new Tooltip(drawAxisTicksTooltip));
 		Tooltip.install(overlayMultipleLabel, new Tooltip(overlayMultipleTooltip));
 //		Tooltip.install(canvas, new Tooltip(canvasTooltip));
 		Tooltip.install(helpButton, new Tooltip(helpButtonTooltip));
@@ -434,11 +450,7 @@ public class MainController {
 		
 		Tooltip.install(panCentreButton, new Tooltip(panCentreTooltip));
 		Tooltip.install(lockPanningLabel, new Tooltip(panLockTooltip));
-
-		Tooltip.install(drawingPropertiesTitledPane, new Tooltip(drawingPropertiesTooltip));
-		Tooltip.install(preferencesTitledPane, new Tooltip(preferencesTooltip));
-		Tooltip.install(canvasPropertiesTitledPane, new Tooltip(canvasPropertiesTooltip));
-		Tooltip.install(panningTitledPane, new Tooltip(panningTitledTooltip));
+		
 	}
 
 	private void moveCaretToEndOfFormulaBox() {
@@ -464,7 +476,8 @@ public class MainController {
 		redrawCanvasFromCacheImpl();
 	}
 
-	private void paintBackground() {
+	private void clearOrPaintBackground() {
+		
 		if(getFillBackgroundCheckBoxSelected()) {
 			gc.setFill(canvasBackgroundColour);
 			gc.fillRect(0, 0, canvas.getWidth(), canvas.getHeight());
@@ -511,43 +524,68 @@ public class MainController {
 	}
 
 	private void redrawCanvasFromCacheImpl() {
-		gc.clearRect(0, 0, canvas.getWidth(), canvas.getHeight());
-		listOfLinesVBox.getChildren().clear();
-		paintBackground();
 
-		if (getOverlayMultiple()) {
-			for (GraphData data : graphDataPoints) {
-				addLineToUiList(data);
-				drawLineImpl(data);
-			}
-		} else {
-			boolean drawn = false;
-			for (GraphData data : graphDataPoints) {
-				addLineToUiList(data);
-				if (!drawn) {
-					drawLineImpl(data);
-					if (data.shouldBeDrawn) {
-						drawn = true;
-					}
-				}
-			}
-		}
+		// Optionally: Clear the canvas if only one is to be drawn
+		clearOrPaintBackground();
 
-		if (graphDataPoints.size() == 0) {
-			
-			if (graphDataPoints.size() == 0) {
-				drawAxes(1);
-			}
-			
-			if (getDrawBackground()) {
-				drawBackgroundGrid(1);
-			}
-			
-			drawRightClickDataPoints();
-		}
+		// Optionally: Draw background
+		drawBackgroundGrid();
 
+		// Optionally: Draw axes
+		drawAxes();
+		
+		// Optionally: Draw ticks on axes
+		drawAxisTicks();
+		
+		// Draw all lines
+		drawAllLinesImpl();
+		
+		// Draw any right-click values();
+		drawRightClickDataPoints();
+		
+		// Refocus on textbox
 		moveCaretToEndOfFormulaBox();
+	}
 
+	private void drawAxisTicks() {
+		
+		if(!getDrawAxisTicks()) {
+			return;
+		}
+		
+		gc.setStroke(canvasAxisTickColour);
+		
+		// Draw Horizontal Lines
+		double xValue = 0;
+		double endingXValue = canvas.getWidth();
+		double yAxisStart = (canvas.getHeight() / 2) + panningOffsetY - axisTickHeight;
+		double yAxisEnd = (canvas.getHeight() / 2) + panningOffsetY + axisTickHeight;
+		
+		while (xValue <= endingXValue) {
+			if((xValue - panningOffsetX) % axisTickInterval == 0) {
+				gc.strokeLine(xValue, yAxisStart, xValue, yAxisEnd);
+				xValue += axisTickInterval;
+			} else {
+				xValue++;
+			}
+		}
+		
+		// Draw Horizontal Lines
+		double yValue = 0;
+		double endingYValue = canvas.getHeight();
+		double xAxisStart = (canvas.getWidth() / 2) + panningOffsetX - axisTickWidth;
+		double xAxisEnd = (canvas.getWidth() / 2) + panningOffsetX + axisTickWidth;
+		
+		while (yValue <= endingYValue) {
+			if((yValue - panningOffsetY) % axisTickInterval == 0) {
+				gc.strokeLine(xAxisStart, yValue, xAxisEnd, yValue);
+				yValue += axisTickInterval;
+			} else {
+				yValue++;
+			}
+		}
+
+			
 	}
 
 	private void addLineToUiList(GraphData data) {
@@ -636,32 +674,27 @@ public class MainController {
 		return null;
 	}
 
-	private void drawLineImpl(GraphData data) {
-
-		// Optionally: Clear the canvas if only one is to be drawn
-		if (!getOverlayMultiple()) {
-			paintBackground();
-		}
-
-		// Optionally: scale the y values to fit canvas
-		double scale = getScalingFactor(data.getyValues());
-
-		// Optionally: Draw background
-		if (getDrawBackground()) {
-			drawBackgroundGrid(scale);
-		}
-
-		// Optionally: Draw axes
-		if (getDrawAxes()) {
-			drawAxes(scale);
-		}
-
-		// Draw the line
-		drawYValuesImpl(data, scale);
+	private void drawAllLinesImpl() {
 		
-		// Draw any right-click values();
-		drawRightClickDataPoints();
+		listOfLinesVBox.getChildren().clear();
 
+		if (getOverlayMultiple()) {
+			for (GraphData data : graphDataPoints) {
+				addLineToUiList(data);
+				drawYValuesImpl(data);
+			}
+		} else {
+			boolean drawn = false;
+			for (GraphData data : graphDataPoints) {
+				addLineToUiList(data);
+				if (!drawn) {
+					drawYValuesImpl(data);
+					if (data.shouldBeDrawn) {
+						drawn = true;
+					}
+				}
+			}
+		}
 	}
 
 	private void drawRightClickDataPoints() {
@@ -677,7 +710,11 @@ public class MainController {
 		
 	}
 
-	private void drawBackgroundGrid(double scale) {
+	private void drawBackgroundGrid() {
+		
+		if(!getDrawBackground()) {
+			return;
+		}
 		
 		needToRedrawGrid = false;
 		
@@ -753,24 +790,30 @@ public class MainController {
 		return sb.toString();
 	}
 
-	private void drawAxes(double scale) {
+	private void drawAxes() {
 
+		if(!getDrawAxes()) {
+			return;
+		}
+		
 		gc.setStroke(canvasAxisColour);
 
 		// Draw vertical line
-		double xValue = panningOffsetX + (canvas.getWidth()/2) - (axesLineWidth/2); 
+		double xValue = 1 + panningOffsetX + (canvas.getWidth()/2) - (axesLineWidth/2); 
 		gc.strokeLine(xValue, 0, xValue, canvas.getHeight());
 
 		// Draw horizontal line
-		// TODO Is this right?; needs to take scale into account?
-		double yValue = panningOffsetY + canvas.getHeight() / 2;
+		double yValue = -1 + panningOffsetY + canvas.getHeight() / 2;
 		gc.strokeLine(0, yValue, canvas.getWidth(), yValue + axesLineWidth);
 
-		// TODO draw little tick lines and numbers across the axes
 	}
 
 	private boolean getDrawAxes() {
 		return drawAxesCheckBox.isSelected();
+	}
+	
+	private boolean getDrawAxisTicks() {
+		return drawAxisTicksCheckBox.isSelected();
 	}
 
 	private boolean getDrawBackground() {
@@ -788,7 +831,7 @@ public class MainController {
 		return formula;
 	}
 
-	private void drawYValuesImpl(GraphData data, double scale) {
+	private void drawYValuesImpl(GraphData data) {
 		
 		if(!data.getShouldBeDrawn()) {
 			return;
@@ -805,9 +848,9 @@ public class MainController {
 			}
 
 			 // try-catch is here as the last point will fail
-			double yStartValue = Math.round((canvas.getHeight()/2) - (data.getyValues().get(counter) * scale));
+			double yStartValue = Math.round((canvas.getHeight()/2) - (data.getyValues().get(counter)));
 			try {
-				double yEndValue = Math.round((canvas.getHeight()/2) - (data.getyValues().get(counter + 1) * scale));
+				double yEndValue = Math.round((canvas.getHeight()/2) - (data.getyValues().get(counter + 1)));
 				gc.strokeLine(xValue, yStartValue, xValue + 1, yEndValue);
 			} catch (Exception e) {
 				gc.strokeLine(xValue, yStartValue, xValue + 1, yStartValue);
@@ -1081,6 +1124,12 @@ public class MainController {
 				redrawCanvasFromCacheImpl();
 			}
 		});
+		drawAxisTicksCheckBox.setOnAction(new EventHandler<ActionEvent>() {
+			@Override
+			public void handle(ActionEvent event) {
+				redrawCanvasFromCacheImpl();
+			}
+		});
 		overlayMultipleCheckBox.setOnAction(new EventHandler<ActionEvent>() {
 			@Override
 			public void handle(ActionEvent event) {
@@ -1222,9 +1271,8 @@ public class MainController {
 //		
 //		helpStage.showAndWait();
 		
-		paintBackground();
+		clearOrPaintBackground();
 		drawHelpBorder();
-//		drawBackgroundGrid(1);
 		
         gc.setFill(canvasHelpTextColour);
         gc.setFont(Font.font("Georgia", 20));

@@ -132,6 +132,13 @@
 						</children>
 					</HBox>
 
+					<HBox fx:id="drawAxisTicksRow">
+						<children>
+							<CheckBox fx:id="drawAxisTicksCheckBox" />
+							<Label fx:id="drawAxisTicksLabel" text=" Draw Ticks on Axis" />
+						</children>
+					</HBox>
+
 					<HBox fx:id="overlayMultipleRow">
 						<children>
 							<CheckBox fx:id="overlayMultipleCheckBox" />
