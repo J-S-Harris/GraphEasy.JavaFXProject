@@ -144,7 +144,7 @@
 			</TitledPane>
 
 			<TitledPane fx:id="preferencesTitledPane"
-				text="Preferences">
+				text="Preferences and Help">
 				<VBox>
 					<HBox fx:id="setAlwaysOnTopRow">
 						<children>
@@ -153,6 +153,10 @@
 								text=" Pin Window to Front" />
 						</children>
 					</HBox>
+					
+					<Separator maxHeight="1" />
+					
+					<Button fx:id="helpButton" text="Help" onAction="#openHelpPopup" />
 				</VBox>
 
 			</TitledPane>

@@ -2,7 +2,10 @@ package mainClasses;
 
 import java.io.File;
 import java.io.IOException;
+import java.math.BigDecimal;
+import java.math.MathContext;
 import java.util.ArrayList;
+import java.util.Arrays;
 
 import javax.imageio.ImageIO;
 import javax.script.ScriptException;
@@ -30,6 +33,7 @@ import javafx.scene.control.TitledPane;
 import javafx.scene.control.Tooltip;
 import javafx.scene.image.Image;
 import javafx.scene.image.WritableImage;
+import javafx.scene.input.MouseButton;
 import javafx.scene.layout.Background;
 import javafx.scene.layout.BackgroundFill;
 import javafx.scene.layout.CornerRadii;
@@ -39,6 +43,7 @@ import javafx.scene.layout.Priority;
 import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
+import javafx.scene.text.Font;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
 import net.objecthunter.exp4j.Expression;
@@ -128,8 +133,12 @@ public class MainController {
 	CheckBox setAlwaysOnTopCheckBox;
 	@FXML
 	TitledPane drawingPropertiesTitledPane, preferencesTitledPane, canvasPropertiesTitledPane, panningTitledPane;
+	@FXML
+	Button helpButton;
+	@FXML
+	Label setAlwaysOnTopLabel, fillBackgroundLabel, lockPanningLabel;
 	
-
+	int leftPanelWidth = 200;
 	int canvasSizeChangeInterval = 100;
 	int canvasMinimumSize = 400;
 	int canvasMaximumSize = 1400;
@@ -141,12 +150,33 @@ public class MainController {
 	double mouseX = 0;
 	double mouseY = 0;
 	
+	private final int defaultCanvasWidth = 800;
+	private final int defaultCanvasHeight = 600;
+	
+	ArrayList<GraphDataPoints> rightClickDataPoints = new ArrayList<>();
+	
 	Color canvasBackgroundColour = Color.BEIGE;
 	Color canvasAxisColour = Color.BLACK;
+	Color rightClickPointsColour = Color.RED;
 	Color canvasBackgroundGridColour = new Color(0.5, 0.5, 0.5, 0.5); // Grey
 	Color[] lineColours = { Color.LIGHTGREEN, Color.ORANGE, Color.BLUEVIOLET, Color.CHARTREUSE, //
 			Color.SALMON, Color.SANDYBROWN, Color.RED, Color.AQUA };
 
+	int colVal = 80, interval = 15;
+	Color canvasHelpBorderColour1 = Color.rgb(colVal, colVal, colVal);
+	Color canvasHelpBorderColour2 = Color.rgb(colVal-interval, colVal-interval, colVal-interval);
+	Color canvasHelpBorderColour3 = Color.rgb(colVal-(2*interval), colVal-(2*interval), colVal-(2*interval));
+	Color canvasHelpBorderColour4 = Color.rgb(colVal-(3*interval), colVal-(3*interval), colVal-(3*interval));
+	
+	Color canvasHelpBorderAccentColour1 = Color.WHITE;
+	Color canvasHelpTextColour = Color.BLACK;
+	
+	int colVal2 = 250;
+	int interval2 = 7;
+	Color canvasHelpBackgroundColour1 = Color.rgb(colVal2, colVal2, colVal2);
+	Color canvasHelpBackgroundColour2 = Color.rgb(colVal2-interval2, colVal2-interval2, colVal2-interval2);
+	Color canvasHelpBackgroundColour3 = Color.rgb(colVal2-(2*interval2), colVal2-(2*interval2), colVal2-(2*interval2));
+	
 	int canvasLineWidth = 2;
 	double backgroundLineWidth = 0.5;
 	double axesLineWidth = 2;
@@ -157,6 +187,8 @@ public class MainController {
 	int gridIntervalChangeFactor = 2;
 	
 	int smallButtonMargin = 10;
+	
+	double rightClickPointsCrossSize = 7;
 	
 	boolean needToRedrawGrid = true;
 	
@@ -176,6 +208,23 @@ public class MainController {
 	final String drawBackgroundTooltip = "Draw the background grid";
 	final String drawAxesTooltip = "Draw the X and Y axes";
 	final String overlayMultipleTooltip = "Allow multiple curves to be drawn";
+	final String helpButtonTooltip = "Display help";
+	final String alwaysOnTopTooltip = "Pin this window to the front of the screen";
+	final String paintBackgroundTooltip = "Colour the background";
+	
+	final String intervalSizeTooltip = "Make the grid cells larger or smaller";
+	final String intervalSizeTooltip_Grow = "Make the grid cells larger ";
+	final String intervalSizeTooltip_Shrink = "Make the grid cells smaller";
+	final String canvasSizeTooltip = "Make the canvas larger or smaller";
+	final String canvasSizeTooltip_Grow = "Make the canvas larger";
+	final String canvasSizeTooltip_Shrink = "Make the canvas smaller";
+	final String panCentreTooltip = "Pan back to the origin (0, 0)";
+	final String panLockTooltip = "Lock panning to current location";
+	
+	final String drawingPropertiesTooltip = "Change how curves are drawn to the canvas";
+	final String preferencesTooltip = "Change settings and view help";
+	final String canvasPropertiesTooltip = "Change the size of the canvas and the background grid";
+	final String panningTitledTooltip = "Recentre to the origin (0,0) or lock panning to present position";
 	
 	private int panningYInterval = 25;
 	private int initialPanningOffsetY = 0;
@@ -225,13 +274,21 @@ public class MainController {
 		});
 
 		confirmButton.setMaxWidth(Double.MAX_VALUE);
+		helpButton.setMaxWidth(Double.MAX_VALUE);
 		snapshotButton.setMaxWidth(Double.MAX_VALUE);
 
+		leftPanelScrollPane.setMinWidth(leftPanelWidth);
+		leftPanelScrollPane.setPrefWidth(leftPanelWidth);
+		leftPanelScrollPane.setMaxWidth(leftPanelWidth);
+		leftPanelVBox.setMinWidth(leftPanelWidth);
+		leftPanelVBox.setPrefWidth(leftPanelWidth);
+		leftPanelVBox.setMaxWidth(leftPanelWidth);
+		
 	}
 
 	private void setMarginsToLeftPanelNodes() {
-		Insets defaultInsets = new Insets(6, 0, 6, 6);
-		Insets titledPaneInsets = new Insets(4, 0, 0, 0);
+		Insets defaultInsets = new Insets(4, 6, 4, 6);
+		Insets titledPaneInsets = new Insets(4, 2, 0, 1);
 		
 		for(Node node : leftPanelVBox.getChildren()) {
 			if(node instanceof TitledPane) {
@@ -273,20 +330,84 @@ public class MainController {
 		});
 		
 		canvas.setOnMouseDragged(event -> {
-			if(!getAllowedToPan()) {
+			if(!getAllowedToPan(event.getButton())) {
 				return;
 			}
-			panningOffsetX += (event.getX() - mouseX);
-			mouseX = event.getX();
-			panningOffsetY += (event.getY() - mouseY);
-			mouseY = event.getY();
-			recalculateAndRedrawLinesFromCache();
-		});
-		canvas.setOnMouseClicked(event -> {
-			if (event.getClickCount() == 2) {
-				panCentre();
+			if (event.getButton() != MouseButton.SECONDARY) {
+				panningOffsetX += (event.getX() - mouseX);
+				mouseX = event.getX();
+				panningOffsetY += (event.getY() - mouseY);
+				mouseY = event.getY();
+				recalculateAndRedrawLinesFromCache();
 			}
 		});
+		canvas.setOnMouseClicked(event -> {
+			if (event.getButton() == MouseButton.SECONDARY) {
+				rightClickDataPoints.add(new GraphDataPoints(event.getX(), event.getY()));
+				if(rightClickDataPoints.size() == 2) {
+					inferAndDrawNewLine();
+				} else {
+					redrawCanvasFromCacheImpl();
+				}
+			} else {
+				if (event.getClickCount() == 2) {
+					panCentre();
+				}
+			}
+		});
+	}
+
+	private void inferAndDrawNewLine() {
+		try {
+			String formula = inferFormulaFromRightClickDataPoints();
+			createLine(formula);
+		} catch (ScriptException e) {
+			e.printStackTrace();
+		}
+	}
+
+	private String inferFormulaFromRightClickDataPoints() {
+		String output = "y=";
+		output += calculateRatio();
+		rightClickDataPoints.clear();
+		return output;
+	}
+
+	private String calculateRatio() {
+
+		BigDecimal x1 = BigDecimal.valueOf(rightClickDataPoints.get(0).getX()).subtract(BigDecimal.valueOf(0.5 * canvas.getWidth()));
+		BigDecimal y1 = BigDecimal.valueOf(0.5 * canvas.getHeight()).subtract(BigDecimal.valueOf(rightClickDataPoints.get(0).getY()));
+
+		BigDecimal x2 = BigDecimal.valueOf(rightClickDataPoints.get(1).getX()).subtract(BigDecimal.valueOf(0.5 * canvas.getWidth()));
+		BigDecimal y2 = BigDecimal.valueOf(0.5 * canvas.getHeight()).subtract(BigDecimal.valueOf(rightClickDataPoints.get(1).getY()));
+		
+		if (x1.equals(x2)) {
+			displayInfoPopup("Cannot calculate slope: x1 and x2 are identical.");
+			return "";
+		}
+		
+		BigDecimal ratio = y2.subtract(y1).divide(x2.subtract(x1), MathContext.DECIMAL128);
+		BigDecimal offset = y1.add(BigDecimal.valueOf(panningOffsetY)).subtract((x1.subtract(BigDecimal.valueOf(panningOffsetX))).multiply(ratio)).negate();
+		
+		return String.format("%.2fx%+.2f", ratio, offset.negate());
+		
+	}
+
+//	private double getYOffset(double ratio) {
+//		// TODO Calculate this
+////		System.out.println("TODO: Currently this just returns 0 and intersects the origin");
+////		return 0;
+//		
+//		TODO Calculate Y offset
+//		
+//		return 0;
+//		
+//	}
+
+	private void placeRedDotOnCanvas() {
+		// TODO
+		System.out.println("TODO: Put temp red dots on canvas");
+
 	}
 
 	private void addTooltips() {
@@ -299,6 +420,25 @@ public class MainController {
 		Tooltip.install(drawAxesLabel, new Tooltip(drawAxesTooltip));
 		Tooltip.install(overlayMultipleLabel, new Tooltip(overlayMultipleTooltip));
 //		Tooltip.install(canvas, new Tooltip(canvasTooltip));
+		Tooltip.install(helpButton, new Tooltip(helpButtonTooltip));
+		Tooltip.install(setAlwaysOnTopLabel, new Tooltip(alwaysOnTopTooltip));
+		Tooltip.install(fillBackgroundLabel, new Tooltip(paintBackgroundTooltip));
+		
+		Tooltip.install(intervalSizeLabel, new Tooltip(intervalSizeTooltip));
+		Tooltip.install(increaseIntervalButton, new Tooltip(intervalSizeTooltip_Grow));
+		Tooltip.install(decreaseIntervalButton, new Tooltip(intervalSizeTooltip_Shrink));
+		
+		Tooltip.install(canvasSizeLabel, new Tooltip(canvasSizeTooltip));
+		Tooltip.install(increasecanvasSizeButton, new Tooltip(canvasSizeTooltip_Grow));
+		Tooltip.install(decreasecanvasSizeButton, new Tooltip(canvasSizeTooltip_Shrink));
+		
+		Tooltip.install(panCentreButton, new Tooltip(panCentreTooltip));
+		Tooltip.install(lockPanningLabel, new Tooltip(panLockTooltip));
+
+		Tooltip.install(drawingPropertiesTitledPane, new Tooltip(drawingPropertiesTooltip));
+		Tooltip.install(preferencesTitledPane, new Tooltip(preferencesTooltip));
+		Tooltip.install(canvasPropertiesTitledPane, new Tooltip(canvasPropertiesTooltip));
+		Tooltip.install(panningTitledPane, new Tooltip(panningTitledTooltip));
 	}
 
 	private void moveCaretToEndOfFormulaBox() {
@@ -309,8 +449,8 @@ public class MainController {
 
 	private void createDefaultCanvas() {
 		canvas = new Canvas();
-		canvas.setHeight(AppClass.defaultStageHeight);
-		canvas.setWidth(AppClass.defaultStageWidth);
+		canvas.setHeight(defaultCanvasHeight);
+		canvas.setWidth(defaultCanvasWidth);
 
 		int canvasMargin = 2;
 		HBox.setMargin(canvasBox, new Insets(canvasMargin, canvasMargin, canvasMargin, canvasMargin));
@@ -333,7 +473,7 @@ public class MainController {
 		}
 		needToRedrawGrid = true;
 	}
-
+	
 	private void createLine(String formula) throws ScriptException {
 
 		formula = tidyAndCorrectFormula(formula);
@@ -393,11 +533,17 @@ public class MainController {
 			}
 		}
 
-		if (graphDataPoints.size() == 0 && getDrawAxes()) {
-			drawAxes(1);
-		}
-		if (graphDataPoints.size() == 0 && getDrawBackground()) {
-			drawBackgroundGrid(1);
+		if (graphDataPoints.size() == 0) {
+			
+			if (graphDataPoints.size() == 0) {
+				drawAxes(1);
+			}
+			
+			if (getDrawBackground()) {
+				drawBackgroundGrid(1);
+			}
+			
+			drawRightClickDataPoints();
 		}
 
 		moveCaretToEndOfFormulaBox();
@@ -432,6 +578,8 @@ public class MainController {
 		outerHBox.getChildren().add(label);
 		
 		CheckBox checkBox = new CheckBox();
+		Insets checkBoxInsets = new Insets(0,20,0,0);
+		HBox.setMargin(checkBox, checkBoxInsets);
 		checkBox.setSelected(data.getShouldBeDrawn());
 		outerHBox.getChildren().add(checkBox);
 		
@@ -510,7 +658,23 @@ public class MainController {
 
 		// Draw the line
 		drawYValuesImpl(data, scale);
+		
+		// Draw any right-click values();
+		drawRightClickDataPoints();
 
+	}
+
+	private void drawRightClickDataPoints() {
+
+		gc.setStroke(rightClickPointsColour);
+		
+		double size = rightClickPointsCrossSize;
+
+		for(GraphDataPoints point : rightClickDataPoints) {
+			gc.strokeLine(point.getX() - size, point.getY() - size, point.getX() + size, point.getY() + size);
+			gc.strokeLine(point.getX() - size, point.getY() + size, point.getX() + size, point.getY() - size);
+		}
+		
 	}
 
 	private void drawBackgroundGrid(double scale) {
@@ -550,8 +714,22 @@ public class MainController {
 		return 1;
 	}
 	
+	private boolean getAllowedToPan(MouseButton buttonType) {
+		if(buttonType == MouseButton.PRIMARY) {
+			return getAllowedToPan();
+		}
+		return false;
+	}
 	private boolean getAllowedToPan() {
+		// TODO Not ideal, temporary fix;
+		// crosses don't work properly if the user pans after placing first cross 
+		if(rightClickDataPoints.size() > 0) {
+			displayInfoPopup("Place the second cross (right-click) before panning");
+			return false;
+		}
+		
 		return !getLockPanningCheckBoxSelected();
+				
 	}
 	
 	private boolean getLockPanningCheckBoxSelected() {
@@ -755,6 +933,7 @@ public class MainController {
 	public static void displayInfoPopup(String text) {
 		Alert alert = new Alert(AlertType.INFORMATION);
 		alert.setTitle("Information");
+		alert.setHeaderText("Information");
 		alert.setContentText(text);
 		alert.showAndWait();
 	}
@@ -1018,4 +1197,117 @@ public class MainController {
 		}
 	}
 
+	public void openHelpPopup() {
+		
+		
+//		Stage helpStage = new Stage();
+//		helpStage.setAlwaysOnTop(true);
+//		VBox helpMain = new VBox();
+//		Scene helpScene = new Scene(helpMain);
+//		helpStage.setScene(helpScene);
+//		
+//		helpMain.getChildren().add(new Label(helpString_Title));
+//		helpMain.getChildren().add(new Separator());
+//
+//		Button closeButton = new Button("Close");
+//		helpMain.getChildren().add(closeButton);
+//		
+//		closeButton.setOnAction(new EventHandler<ActionEvent>() {
+//			
+//			@Override
+//			public void handle(ActionEvent event) {
+//				helpStage.close();
+//			}
+//		});
+//		
+//		helpStage.showAndWait();
+		
+		paintBackground();
+		drawHelpBorder();
+//		drawBackgroundGrid(1);
+		
+        gc.setFill(canvasHelpTextColour);
+        gc.setFont(Font.font("Georgia", 20));
+
+        int x = 100;
+        int startingY = 100;
+        int y = startingY;
+        int increment = 60;
+        
+        for(String string : getHelpStrings()) {
+        	if (string.contains("-")) {
+        		y -= 20;
+        	}
+        	gc.fillText(string, x, y);
+			if (string.contains("\n")) {
+				y += 10;
+			}
+        	y += increment;
+        }
+		
+		
+	}
+
+	private void drawHelpBorder() {
+
+		
+		// Draw background
+        int tileSize = 20; // Size of individual squares
+        double width = canvas.getWidth();
+		double height = canvas.getHeight();
+
+        for (int row = 0; row < height / tileSize; row++) {
+            for (int col = 0; col < width / tileSize; col++) {
+                // Create diagonal pattern logic
+                if ((row + col) % 3 == 0) {
+                    gc.setFill(canvasHelpBackgroundColour1);
+                } else if ((row + col) % 3 == 1) {
+                    gc.setFill(canvasHelpBackgroundColour2);
+                } else {
+                    gc.setFill(canvasHelpBackgroundColour3);
+                }
+                // Draw square tile
+                gc.fillRect(col * tileSize, row * tileSize, tileSize, tileSize);
+            }
+        }
+
+
+		// Draw border
+		width = 20;
+		height = 20;
+		gc.setFill(canvasHelpBorderColour1);
+		gc.fillRect(0, 0, width, canvas.getHeight());
+		gc.setFill(canvasHelpBorderColour2);
+		gc.fillRect(0, 0, canvas.getWidth(), height);
+		gc.setFill(canvasHelpBorderColour3);
+		gc.fillRect(0, canvas.getHeight()-height, canvas.getWidth(), height);
+		gc.setFill(canvasHelpBorderColour4);
+		gc.fillRect(canvas.getWidth()-width, 0, width, canvas.getHeight()+1);
+		
+		// Draw outer border
+		gc.setFill(canvasHelpBorderAccentColour1);
+		width = 1;
+		height = 1;
+		gc.fillRect(0, 0, width, canvas.getHeight());
+		gc.fillRect(0, 0, canvas.getWidth(), height);
+		gc.fillRect(0, canvas.getHeight()-height, canvas.getWidth(), height);
+		gc.fillRect(canvas.getWidth()-width, 0, width, canvas.getHeight()+1);
+		
+        // Set fill color for lines
+        gc.setStroke(Color.BLUE);
+        gc.setLineWidth(2);
+
+	}
+
+	private ArrayList<String> getHelpStrings() {
+		return new ArrayList<String>(Arrays.asList(//
+			"This tool will let you draw curves onto the canvas.", 
+			"Try hovering over any of the dropdowns, buttons, and checkboxes\n to get a tooltip explaining them.",
+			"Other things you can do:",
+			"    - Click and drag to pan around the grid.",
+			"    - Right click on 2 points to add a line between them.",
+			"Double click the canvas to close help"
+			));
+	}
+	
 }
