@@ -4,11 +4,18 @@ import java.io.File;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.math.MathContext;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Scanner;
 
 import javax.imageio.ImageIO;
 import javax.script.ScriptException;
+
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 import easterEggs.EasterEggMethods;
 import javafx.application.Platform;
@@ -52,18 +59,15 @@ import net.objecthunter.exp4j.ExpressionBuilder;
 public class MainController {
 
 	// TODO Possible next TODOs
-	// Export this to an exe
+	// Export this to a JAR or an exe
 	// Unit tests
-	// Add numbered ticks to the axes
-	// Put lefthand controls into collapsable accordions
+	// Add numbers to axis ticks
 	// Add an option to display the formulas next to each curve?
 	// Add buttons on the graph to pan in tidy/discrete units up/down/L/R?
 	// Make the zoom work; the buttons are disabled in the FXML
 	// Make the GraphData remember its colour, so that deleting earlier lines
 		// doesn't change the colour
 		// Also, generally: Tighten up/expand the usage of the GraphData objects
-	// Give user checkbox to de/select from list. Only display selected
-		// This can be stored in GraphData, and referenced from there
 
 	private final static String appTitle = "GraphEasy";
 	public final static String appIconFileName = "linechart.png";
@@ -102,7 +106,7 @@ public class MainController {
 	@FXML
 	Button confirmButton;
 	@FXML
-	Button snapshotButton;
+	Button snapshotButton, saveAllLinesToFile, loadFilesFromFile;
 	@FXML
 	Button squareButton;
 	@FXML
@@ -193,14 +197,17 @@ public class MainController {
 	double gridIntervalMaximumValue = 800;
 	int gridIntervalChangeFactor = 2;
 	
+	int fullWidthButtonMargin = 5;
 	int smallButtonMargin = 10;
 	
 	double rightClickPointsCrossSize = 7;
 	
 	boolean needToRedrawGrid = true;
 	
-	final static String fxmlFileName = "/mainFXML.fxml";
+	public final static String fxmlFileName = "/mainFXML.fxml";
 
+	FileChooser fileChooser;
+	
 	final String removeRowString = "x";
 	final String formulaBoxStartingText = "y=";
 
@@ -256,6 +263,7 @@ public class MainController {
 		addTooltips();
 		setEventHandlers();
 		setSmallButtonProperties();
+		setFullWidthButtonProperties();
 		addTooltips();
 		setCanvasListeners();
 		setMarginsToLeftPanelNodes();
@@ -283,7 +291,10 @@ public class MainController {
 
 		confirmButton.setMaxWidth(Double.MAX_VALUE);
 		helpButton.setMaxWidth(Double.MAX_VALUE);
+		
 		snapshotButton.setMaxWidth(Double.MAX_VALUE);
+		saveAllLinesToFile.setMaxWidth(Double.MAX_VALUE);
+		loadFilesFromFile.setMaxWidth(Double.MAX_VALUE);
 
 		leftPanelScrollPane.setMinWidth(leftPanelWidth);
 		leftPanelScrollPane.setPrefWidth(leftPanelWidth);
@@ -882,7 +893,7 @@ public class MainController {
 		return lowest;
 	}
 
-	private void calculateRawValues(String formula, ArrayList<Double> destinationArray) {
+	public void calculateRawValues(String formula, ArrayList<Double> destinationArray) {
 		destinationArray.clear();
 		for (double xValue = 0 - (canvas.getWidth() / 2); xValue <= (canvas.getWidth() / 2); xValue += 1) {
 			String formulaImpl = formula.replace("x", "(" + (int) (xValue - panningOffsetX) + ")");
@@ -1082,6 +1093,14 @@ public class MainController {
 		}
 		return stage;
 	}
+	
+	private void setFullWidthButtonProperties() {
+		Insets insets = new Insets(fullWidthButtonMargin, 0, 0, 0);
+		
+		VBox.setMargin(snapshotButton, insets);
+		VBox.setMargin(saveAllLinesToFile, insets);
+		VBox.setMargin(loadFilesFromFile, insets);
+	}
 
 	private void setSmallButtonProperties() {
 		
@@ -1204,9 +1223,13 @@ public class MainController {
 	public void saveSnapshot() {
 		    WritableImage image = new WritableImage((int) canvas.getWidth(), (int) canvas.getHeight());
 		    canvas.snapshot(null, image);
-		    FileChooser fileChooser = new FileChooser();
+		    if(fileChooser == null) {
+		    	fileChooser = new FileChooser();
+		    }
+		    fileChooser.getExtensionFilters().clear();
 		    fileChooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("PNG Image", "*.png"));
 		    File file = fileChooser.showSaveDialog(stage);
+		    fileChooser.setInitialDirectory(file.getParentFile());
 		    try {
 		        ImageIO.write(SwingFXUtils.fromFXImage(image, null), "png", file);
 		        displayInfoPopup("Image saved to:\n" + file.getAbsolutePath());
@@ -1357,5 +1380,82 @@ public class MainController {
 			"Double click the canvas to close help"
 			));
 	}
-	
+
+	public void loadFromFile() {
+		loadFromFile(false);
+	}
+
+	public void loadFromFile(boolean debug) {
+		if(fileChooser == null) {
+			fileChooser = new FileChooser();
+		}
+		fileChooser.getExtensionFilters().clear();
+		fileChooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("TXT File", "*.txt"));
+		File file = fileChooser.showOpenDialog(stage).getAbsoluteFile();
+		fileChooser.setInitialDirectory(file.getParentFile());
+		
+		if (loadImpl(file, graphDataPoints)) {
+			redrawCanvasFromCacheImpl();
+		}
+
+	}
+
+	public boolean loadImpl(File file, ArrayList<GraphData> dest) {
+		if (file != null) {
+			try {
+
+				ObjectMapper om = new ObjectMapper();
+				String string = "";
+				Scanner scanner = new Scanner(file);
+				while (scanner.hasNext()) {
+					string += scanner.nextLine();
+				}
+				scanner.close();
+
+				GraphData[] graphData = om.readValue(string, GraphData[].class);
+
+				dest.clear();
+				for (GraphData data : graphData) {
+					dest.add(data);
+				}
+				return true;
+
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
+		}
+
+		return false;
+	}
+
+	public void saveToFile() {
+		try {
+			if(fileChooser == null) {
+				fileChooser = new FileChooser();
+			}
+			fileChooser.getExtensionFilters().clear();
+			fileChooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("TXT File", "*.txt"));
+			File file = fileChooser.showSaveDialog(stage);
+			fileChooser.setInitialDirectory(file.getParentFile());
+			saveImpl(file, graphDataPoints);
+
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+	}
+
+	public void saveImpl(File file, ArrayList<GraphData> dest) {
+		try {
+			String output;
+			output = new ObjectMapper().writeValueAsString(dest);
+			if (!file.exists()) {
+				file.createNewFile();
+			}
+			Files.write(file.toPath(), output.getBytes(StandardCharsets.UTF_8));
+		} catch (Exception e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+	}
+
 }

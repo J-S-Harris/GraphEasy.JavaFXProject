@@ -9,14 +9,14 @@ public class GraphData {
 	String formula;
 	ArrayList<Double> yValues;
 	boolean shouldBeDrawn = true;
-	UUID uuid;
 	
+	public GraphData() {
+	}
 	
 	public GraphData(String name, String formula, ArrayList<Double> yValues) {
 		this.name = name;
 		this.formula = formula;
 		this.yValues = yValues;
-		uuid = UUID.randomUUID();
 	}
 	
 	public String getName() {

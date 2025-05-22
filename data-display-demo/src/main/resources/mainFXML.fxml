@@ -39,14 +39,15 @@
 
 			<Separator maxHeight="1" />
 
-			<!-- <TitledPane text="Screenshot"> -->
-			<VBox>
-				<Button fx:id="snapshotButton" text="Save Screenshot"
-					onAction="#saveSnapshot" />
-			</VBox>
-			<!-- </TitledPane> -->
+			<TitledPane text="Save and Load">
+				<VBox>
+					<Button fx:id="snapshotButton" text="Save Screenshot" onAction="#saveSnapshot" />
+					<Button fx:id="saveAllLinesToFile" text="Save Graph Data to File" onAction="#saveToFile" />
+					<Button fx:id="loadFilesFromFile" text="Load Graph Data from File" onAction="#loadFromFile" />
+				</VBox>
+			</TitledPane>
 
-			<Separator maxHeight="1" />
+		<!--  <Separator maxHeight="1" /> -->
 			
 			<!-- 
 <HBox spacing="10">
