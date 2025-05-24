@@ -1,5 +1,5 @@
 # GraphEasy - JavaFX App
-GraphEasy is an easy to use, educational tool for visualising equations on a graph. It is written using Java and JavaFX (and currently unfinished).
+GraphEasy is an easy to use, educational tool for visualising equations on a graph. It is written using Java and JavaFX.
 
 Feel free to grab the JAR and give it a go.
 
